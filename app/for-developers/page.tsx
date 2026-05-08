@@ -30,16 +30,35 @@ export default function ForDevelopersPage() {
           <p>Upload reports to 0G Storage, commit DA evidence, and write compact proof receipts on-chain.</p>
         </article>
       </section>
-      <section className="code-panel">
-        <pre>{`recordReview(
-  agentTokenId,
-  txIntentHash,
-  reportRoot,
-  daCommitment,
-  computeHash,
-  riskScore,
-  verdict
-)`}</pre>
+      <section className="receipt-builder">
+        <div className="receipt-copy">
+          <span className="section-kicker">Receipt builder</span>
+          <h2>One compact on-chain receipt, full evidence off-chain.</h2>
+          <p>
+            The contract stores only the proof-critical fields. The full review stays on 0G Storage,
+            the evidence bundle gets a DA commitment, and the wallet pays the final 0G Chain write.
+          </p>
+        </div>
+        <div className="receipt-card">
+          <div className="receipt-header">
+            <span>ProtectionReceipt</span>
+            <strong>recordReview</strong>
+          </div>
+          {[
+            ["Agent", "agentTokenId"],
+            ["Intent", "txIntentHash"],
+            ["Report", "reportRoot"],
+            ["Availability", "daCommitment"],
+            ["Inference", "computeHash"],
+            ["Score", "riskScore"],
+            ["Decision", "verdict"]
+          ].map(([label, value]) => (
+            <div className="receipt-row" key={label}>
+              <span>{label}</span>
+              <code>{value}</code>
+            </div>
+          ))}
+        </div>
       </section>
       <div className="center-action"><Link className="primary-button" href="/register">Register a guardian</Link></div>
     </main>

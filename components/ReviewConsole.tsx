@@ -6,6 +6,7 @@ import { reviewTransactionWith0GCompute } from "@/lib/compute-client";
 import { hashJson } from "@/lib/hash";
 import { clientConfig } from "@/lib/config";
 import { TxIntent, txIntentSchema } from "@shared/index";
+import { WalletConnect } from "./WalletConnect";
 
 export function ReviewConsole() {
   const [selectedSlug, setSelectedSlug] = useState(guardianAgents[0].slug);
@@ -67,8 +68,10 @@ export function ReviewConsole() {
   }
 
   return (
+    <>
+    <WalletConnect />
     <section className="split-layout">
-      <form className="product-panel form-panel" onSubmit={submit}>
+      <form className="product-panel form-panel elevated-panel" onSubmit={submit}>
         <label>
           Guardian agent
           <select value={selectedSlug} onChange={(event) => loadAgent(event.target.value)}>
@@ -105,7 +108,7 @@ export function ReviewConsole() {
         {error ? <p className="form-error">{error}</p> : null}
       </form>
 
-      <aside className="product-panel result-panel">
+      <aside className="product-panel result-panel elevated-panel">
         <span className="section-kicker">Result</span>
         <h2>{verdictText(result.verdict)} · {result.riskScore}/1000</h2>
         <p>{result.plainEnglishSummary}</p>
@@ -121,5 +124,6 @@ export function ReviewConsole() {
         </div>
       </aside>
     </section>
+    </>
   );
 }

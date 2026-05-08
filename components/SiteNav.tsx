@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WalletConnect } from "./WalletConnect";
 
 export function SiteNav() {
   return (
@@ -12,6 +13,7 @@ export function SiteNav() {
         <Link href="/review">Review</Link>
         <Link href="/proofs">Proofs</Link>
       </nav>
+      <WalletConnect compact />
     </header>
   );
 }
