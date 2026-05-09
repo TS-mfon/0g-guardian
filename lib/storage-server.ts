@@ -9,7 +9,7 @@ export interface ServerStorageResult {
 }
 
 export async function uploadBytesTo0GFromServer(encoded: Uint8Array): Promise<ServerStorageResult> {
-  const privateKey = process.env.SERVER_WALLET_PRIVATE_KEY ?? process.env.DEPLOYER_PRIVATE_KEY ?? process.env.PRIVATE_KEY;
+  const privateKey = (process.env.SERVER_WALLET_PRIVATE_KEY ?? process.env.DEPLOYER_PRIVATE_KEY ?? process.env.PRIVATE_KEY ?? "").trim();
   if (!privateKey) throw new Error("SERVER_WALLET_PRIVATE_KEY is not configured.");
   const sdk = (await import("@0gfoundation/0g-storage-ts-sdk")) as any;
   const signer = new Wallet(privateKey, new JsonRpcProvider(clientConfig.rpcUrl, clientConfig.chainId));
