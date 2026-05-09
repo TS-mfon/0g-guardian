@@ -32,28 +32,33 @@ export function readAgentFunContract() {
 export async function loadAgentsFromChain(): Promise<AgentView[]> {
   const contract = readAgentFunContract();
   if (!contract) return [];
-  const ids: bigint[] = await contract.getAllAgentIds();
-  const agents = await Promise.all(ids.map(async (id) => {
-    const agent = await contract.getAgent(id);
-    const keySupply = await contract.keySupply(id);
-    const reserve = await contract.agentReserve(id);
-    return {
-      id: agent.id.toString(),
-      creator: agent.creator,
-      agentIdTokenId: agent.agentIdTokenId.toString(),
-      name: agent.name,
-      symbol: agent.symbol,
-      category: agent.category,
-      metadataRoot: agent.metadataRoot,
-      memoryRoot: agent.memoryRoot,
-      capabilityHash: agent.capabilityHash,
-      createdAt: agent.createdAt.toString(),
-      active: agent.active,
-      taskCount: agent.taskCount.toString(),
-      totalRevenue: ethers.formatEther(agent.totalRevenue),
-      keySupply: keySupply.toString(),
-      reserve: ethers.formatEther(reserve)
-    } satisfies AgentView;
-  }));
-  return agents.reverse();
+  try {
+    const ids: bigint[] = await contract.getAllAgentIds();
+    const agents = await Promise.all(ids.map(async (id) => {
+      const agent = await contract.getAgent(id);
+      const keySupply = await contract.keySupply(id);
+      const reserve = await contract.agentReserve(id);
+      return {
+        id: agent.id.toString(),
+        creator: agent.creator,
+        agentIdTokenId: agent.agentIdTokenId.toString(),
+        name: agent.name,
+        symbol: agent.symbol,
+        category: agent.category,
+        metadataRoot: agent.metadataRoot,
+        memoryRoot: agent.memoryRoot,
+        capabilityHash: agent.capabilityHash,
+        createdAt: agent.createdAt.toString(),
+        active: agent.active,
+        taskCount: agent.taskCount.toString(),
+        totalRevenue: ethers.formatEther(agent.totalRevenue),
+        keySupply: keySupply.toString(),
+        reserve: ethers.formatEther(reserve)
+      } satisfies AgentView;
+    }));
+    return agents.reverse();
+  } catch (error) {
+    console.warn("Unable to load Agent.fun agents from 0G Chain", error);
+    return [];
+  }
 }
