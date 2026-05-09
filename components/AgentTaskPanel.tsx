@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { ethers } from "ethers";
 import { agentMetadataSchema, agentMemorySchema, taskPromptSchema } from "@shared/index";
 import { clientConfig } from "@/lib/config";
+import { getUserMessage } from "@/lib/errors";
 import { hashJson } from "@/lib/hash";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
 import { agentFunCoreContract, connectWallet } from "@/lib/wallet";
@@ -31,14 +32,9 @@ export function AgentTaskPanel({ agentId, agentName }: { agentId: string; agentN
         prompt,
         createdAt: new Date().toISOString()
       });
-      let promptRoot = hashJson(payload);
       setStatus("Uploading task prompt to 0G Storage...");
-      try {
-        const upload = await uploadJsonTo0GFromBrowser(payload, signer);
-        promptRoot = upload.rootHash;
-      } catch (error) {
-        setStatus(`0G Storage upload fallback hash mode: ${error instanceof Error ? error.message : String(error)}`);
-      }
+      const upload = await uploadJsonTo0GFromBrowser(payload, signer);
+      const promptRoot = upload.rootHash;
       const contract = await agentFunCoreContract();
       const fee = await contract.minTaskFee();
       const taskId = await contract.nextTaskId();
@@ -96,16 +92,10 @@ export function AgentTaskPanel({ agentId, agentName }: { agentId: string; agentN
       });
 
       setStatus("Uploading result and memory proof material...");
-      let resultRoot = hashJson(resultPayload);
-      let memoryRoot = hashJson(memoryPayload);
-      try {
-        const resultUpload = await uploadJsonTo0GFromBrowser(resultPayload, signer);
-        const memoryUpload = await uploadJsonTo0GFromBrowser(memoryPayload, signer);
-        resultRoot = resultUpload.rootHash;
-        memoryRoot = memoryUpload.rootHash;
-      } catch {
-        // Keep deterministic roots when browser storage upload is unavailable.
-      }
+      const resultUpload = await uploadJsonTo0GFromBrowser(resultPayload, signer);
+      const memoryUpload = await uploadJsonTo0GFromBrowser(memoryPayload, signer);
+      const resultRoot = resultUpload.rootHash;
+      const memoryRoot = memoryUpload.rootHash;
 
       const daResponse = await fetch("/api/da/submit", {
         method: "POST",
@@ -123,9 +113,10 @@ export function AgentTaskPanel({ agentId, agentName }: { agentId: string; agentN
         bytes32(memoryRoot)
       );
       await completeTx.wait();
-      setStatus(`Task completed on-chain. Create tx ${tx.hash}. Complete tx ${completeTx.hash}`);
+      setStatus(`Task completed on-chain. Create tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}. Complete tx ${completeTx.hash.slice(0, 10)}...${completeTx.hash.slice(-6)}.`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
+      setTaskTx("");
+      setStatus(getUserMessage(error, "Task failed. Please retry."));
     } finally {
       setBusy(false);
     }
@@ -138,7 +129,7 @@ export function AgentTaskPanel({ agentId, agentName }: { agentId: string; agentN
       <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
       <button className="primary-button" disabled={busy}>{busy ? "Creating task..." : "Pay + Create Task"}</button>
       {status ? <p className="status-line">{status}</p> : null}
-      {taskTx ? <code>{taskTx}</code> : null}
+      {taskTx ? <a className="proof-link" href={`${clientConfig.explorerUrl}/tx/${taskTx}`} target="_blank" rel="noreferrer">View task transaction</a> : null}
     </form>
   );
 }

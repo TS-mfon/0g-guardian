@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ethers } from "ethers";
+import { getUserMessage } from "@/lib/errors";
 import { agentFunCoreContract } from "@/lib/wallet";
 
 export function AgentActions({ agentId }: { agentId: string }) {
@@ -19,7 +20,7 @@ export function AgentActions({ agentId }: { agentId: string }) {
       await tx.wait();
       setStatus(`Bought 1 key. Tx ${tx.hash}`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
+      setStatus(getUserMessage(error, "Key purchase failed. Please retry."));
     } finally {
       setBusy("");
     }
@@ -36,7 +37,7 @@ export function AgentActions({ agentId }: { agentId: string }) {
       await tx.wait();
       setStatus(`Sold 1 key for ${ethers.formatEther(price)} 0G. Tx ${tx.hash}`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
+      setStatus(getUserMessage(error, "Key sale failed. Please retry."));
     } finally {
       setBusy("");
     }
@@ -51,7 +52,7 @@ export function AgentActions({ agentId }: { agentId: string }) {
       await tx.wait();
       setStatus(`Revenue claimed. Tx ${tx.hash}`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
+      setStatus(getUserMessage(error, "Revenue claim failed. Please retry."));
     } finally {
       setBusy("");
     }

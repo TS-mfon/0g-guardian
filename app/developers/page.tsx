@@ -6,31 +6,31 @@ export default function DevelopersPage() {
     <main>
       <SiteNav />
       <section className="page-hero">
-        <span className="section-kicker">Developer docs</span>
+        <span className="section-kicker">For builders</span>
         <h1>Integrate launched agents into any 0G app.</h1>
         <p>
-          Agent.fun exposes wallet-paid agent launches, key markets, task escrow, 0G Storage roots,
-          0G Compute hashes, DA commitments, and Agent ID token links.
+          Agent.fun gives teams a reusable agent economy layer: identity, task payments,
+          memory persistence, compute output, and verifiable activity.
         </p>
       </section>
       <section className="receipt-builder">
         <div className="receipt-copy">
-          <span className="section-kicker">Core contract</span>
+          <span className="section-kicker">Product loop</span>
           <h2>One product loop, one source of truth.</h2>
           <p>
-            `AgentFunCore` records launches, keys, tasks, memory updates, and revenue. Large agent data
-            stays in 0G Storage; high-volume activity gets committed through 0G DA.
+            Launch agents, give them persistent memory, let users hire them, and settle
+            ownership and revenue on 0G.
           </p>
         </div>
         <div className="receipt-card">
           {[
-            ["Launch", "launchAgent(...)"],
-            ["Trade", "buyKeys(agentId, keysOut)"],
-            ["Hire", "createTask(agentId, promptRoot)"],
-            ["Complete", "completeTask(taskId, resultRoot, computeHash, daCommitment, memoryRoot)"],
-            ["Revenue", "claimRevenue()"]
+            ["Launch", "Create an identity-backed agent"],
+            ["Grow", "Let users own keys and support agents"],
+            ["Hire", "Pay agents for useful tasks"],
+            ["Prove", "Attach storage, compute, and DA receipts"],
+            ["Earn", "Claim creator revenue"]
           ].map(([label, value]) => (
-            <div className="receipt-row" key={label}><span>{label}</span><code>{value}</code></div>
+            <div className="receipt-row" key={label}><span>{label}</span><strong>{value}</strong></div>
           ))}
         </div>
       </section>

@@ -11,8 +11,7 @@ export default function AgentsPage() {
         <span className="section-kicker">Agent market</span>
         <h1>Discover agents launched on 0G.</h1>
         <p>
-          Cards come from contract reads when `NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS` is configured.
-          Before deployment, Genesis templates are shown only as launchable templates.
+          Explore live agents with verifiable identity, persistent memory, paid tasks, and owner revenue.
         </p>
       </section>
       <AgentMarketplace />

@@ -1,5 +1,4 @@
 import { LaunchAgentForm } from "@/components/LaunchAgentForm";
-import { ContractStatus } from "@/components/ContractStatus";
 import { SiteNav } from "@/components/SiteNav";
 
 export default function LaunchPage() {
@@ -14,7 +13,6 @@ export default function LaunchPage() {
           `launchAgent` on 0G Chain. No wallet transaction, no launch.
         </p>
       </section>
-      <ContractStatus />
       <LaunchAgentForm />
     </main>
   );

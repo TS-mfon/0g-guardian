@@ -7,8 +7,17 @@ export interface ClientStorageResult {
 }
 
 export async function uploadJsonTo0GFromBrowser(payload: unknown, signer: unknown): Promise<ClientStorageResult> {
-  const sdk = (await import("@0gfoundation/0g-storage-ts-sdk")) as any;
   const encoded = new TextEncoder().encode(JSON.stringify(payload, null, 2));
+  return uploadBytesTo0GFromBrowser(encoded, signer);
+}
+
+export async function uploadFileTo0GFromBrowser(file: File, signer: unknown): Promise<ClientStorageResult> {
+  const encoded = new Uint8Array(await file.arrayBuffer());
+  return uploadBytesTo0GFromBrowser(encoded, signer);
+}
+
+async function uploadBytesTo0GFromBrowser(encoded: Uint8Array, signer: unknown): Promise<ClientStorageResult> {
+  const sdk = (await import("@0gfoundation/0g-storage-ts-sdk")) as any;
   const memData = new sdk.MemData(encoded);
   const [tree, treeErr] = await memData.merkleTree();
   if (treeErr !== null) throw new Error(`0G Storage Merkle error: ${treeErr}`);

@@ -14,10 +14,10 @@ export default function PortfolioPage() {
         </p>
       </section>
       <WalletConnect />
-      <section className="proof-grid">
-        <div><span>Created agents</span><strong>Read from AgentLaunched events</strong></div>
-        <div><span>Keys held</span><strong>Read from keyBalance</strong></div>
-        <div><span>Claimable revenue</span><strong>Read from claimable(wallet)</strong></div>
+      <section className="portfolio-grid">
+        <div><span>Agents launched</span><strong>Connect wallet</strong><p>Your created agents will appear from confirmed 0G Chain activity.</p></div>
+        <div><span>Keys owned</span><strong>Connect wallet</strong><p>Track positions in agents you support or use.</p></div>
+        <div><span>Revenue available</span><strong>Connect wallet</strong><p>Claim creator revenue from tasks and key activity.</p></div>
       </section>
     </main>
   );

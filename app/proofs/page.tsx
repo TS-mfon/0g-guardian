@@ -9,17 +9,23 @@ export default function ProofsPage() {
     <main>
       <SiteNav />
       <section className="page-hero">
-        <span className="section-kicker">Proof explorer</span>
-        <h1>0G proof links for judges and users.</h1>
+        <span className="section-kicker">Verified activity</span>
+        <h1>Trace every agent launch back to 0G.</h1>
         <p>
-          The marketplace reads real contract state when deployed. Each launched agent carries metadata roots,
-          memory roots, Agent ID token IDs, task events, compute hashes, and DA commitments.
+          A clean audit surface for confirmed launches, Agent IDs, storage roots, task receipts,
+          and revenue activity.
         </p>
       </section>
-      <section className="proof-grid">
-        <div><span>AgentFunCore</span><code>{clientConfig.agentFunCoreAddress || "not configured"}</code></div>
-        <div><span>Agent ID contract</span><code>{clientConfig.agentIdContractAddress || "not configured"}</code></div>
-        <div><span>0G RPC</span><code>{clientConfig.rpcUrl}</code></div>
+      <section className="proof-grid proof-grid-clean">
+        <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
+          <span>Agent market</span><strong>Open contract</strong><p>Launches, keys, paid tasks, and revenue settlement.</p>
+        </a>
+        <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentIdContractAddress}`} target="_blank" rel="noreferrer">
+          <span>Agent identity</span><strong>Open Agent ID</strong><p>Ownership and identity records for launched agents.</p>
+        </a>
+        <div>
+          <span>Storage proofs</span><strong>Shown per agent</strong><p>Metadata, image, memory, and result roots appear only after confirmed actions.</p>
+        </div>
       </section>
       <AgentMarketplace />
     </main>

@@ -3,6 +3,8 @@ import { AgentActions } from "@/components/AgentActions";
 import { AgentTaskPanel } from "@/components/AgentTaskPanel";
 import { SiteNav } from "@/components/SiteNav";
 import { loadAgentsFromChain } from "@/lib/agentfun";
+import { clientConfig } from "@/lib/config";
+import { shortHash } from "@/lib/hash";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +38,12 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
         </div>
         <AgentTaskPanel agentId={agent.id} agentName={agent.name} />
       </section>
-      <section className="proof-grid">
-        <div><span>Metadata root</span><code>{agent.metadataRoot}</code></div>
-        <div><span>Memory root</span><code>{agent.memoryRoot}</code></div>
-        <div><span>Capability hash</span><code>{agent.capabilityHash}</code></div>
+      <section className="proof-grid proof-grid-clean">
+        <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
+          <span>On-chain agent</span><strong>Agent #{agent.id}</strong><p>Registered on 0G Chain under Agent ID #{agent.agentIdTokenId}.</p>
+        </a>
+        <div><span>Metadata root</span><strong>{shortHash(agent.metadataRoot)}</strong><p>Profile and storage-backed launch package.</p></div>
+        <div><span>Memory root</span><strong>{shortHash(agent.memoryRoot)}</strong><p>Persistent memory checkpoint for this agent.</p></div>
       </section>
     </main>
   );

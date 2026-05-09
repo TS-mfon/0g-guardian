@@ -5,8 +5,9 @@ import { ethers } from "ethers";
 import { AgentCategory, agentMetadataSchema, agentMemorySchema } from "@shared/index";
 import { genesisTemplates } from "@/lib/agent-templates";
 import { clientConfig } from "@/lib/config";
-import { hashJson } from "@/lib/hash";
-import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
+import { getUserMessage } from "@/lib/errors";
+import { hashJson, shortHash } from "@/lib/hash";
+import { uploadFileTo0GFromBrowser, uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
 import { agentFunCoreContract, agentIdContract, connectWallet } from "@/lib/wallet";
 
 function bytes32(value: string) {
@@ -24,7 +25,9 @@ export function LaunchAgentForm() {
   const [agentIdTokenId, setAgentIdTokenId] = useState("1001");
   const [status, setStatus] = useState("");
   const [txHash, setTxHash] = useState("");
-  const [roots, setRoots] = useState({ metadataRoot: "", memoryRoot: "", capabilityHash: "" });
+  const [verifiedProof, setVerifiedProof] = useState({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", imageRoot: "", txHash: "" });
+  const [agentImage, setAgentImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [busy, setBusy] = useState(false);
 
   function loadTemplate(value: string) {
@@ -37,15 +40,32 @@ export function LaunchAgentForm() {
     setSystemPrompt(next.systemPrompt);
   }
 
+  function selectImage(file: File | null) {
+    setAgentImage(file);
+    setImagePreview((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return file ? URL.createObjectURL(file) : "";
+    });
+  }
+
   async function launch(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setStatus("Connecting wallet...");
     setTxHash("");
+    setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", imageRoot: "", txHash: "" });
     try {
       if (!clientConfig.agentFunCoreAddress) throw new Error("NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS is not configured.");
+      if (!clientConfig.agentIdContractAddress) throw new Error("Agent ID contract is not configured.");
+      if (!agentImage) throw new Error("Please add an agent image before launch.");
+      if (agentImage.size > 5 * 1024 * 1024) throw new Error("Agent image must be 5MB or less.");
       const { signer, address } = await connectWallet();
+      const idContract = await agentIdContract();
+      const nextTokenId = await idContract.nextTokenId();
+      const nextTokenIdText = nextTokenId.toString();
       const now = new Date().toISOString();
+      setStatus("Uploading agent image to 0G Storage...");
+      const imageUpload = await uploadFileTo0GFromBrowser(agentImage, signer);
       const metadata = agentMetadataSchema.parse({
         version: "1.0",
         app: "agent.fun",
@@ -54,8 +74,8 @@ export function LaunchAgentForm() {
         description,
         category,
         creator: address,
-        agentIdTokenId,
-        avatar: { prompt: template.avatarPrompt },
+        agentIdTokenId: nextTokenIdText,
+        avatar: { prompt: template.avatarPrompt, storageRoot: imageUpload.rootHash, mimeType: agentImage.type },
         systemPrompt,
         model: { provider: "0G Compute", modelId: clientConfig.computeModel, teeRequired: category === "trading" },
         pricing: { minTaskFee: "0.0005", chatFee: "0.0005", creatorFeeBps: 300 },
@@ -63,7 +83,7 @@ export function LaunchAgentForm() {
       });
       const memory = agentMemorySchema.parse({
         version: "1.0",
-        agentId: agentIdTokenId,
+        agentId: nextTokenIdText,
         memoryIndex: 0,
         longTermSummary: `Initial memory for ${name}.`,
         userPreferences: {},
@@ -73,33 +93,17 @@ export function LaunchAgentForm() {
       });
 
       setStatus("Uploading metadata and memory to 0G Storage...");
-      let metadataRoot = hashJson(metadata);
-      let memoryRoot = hashJson(memory);
-      try {
-        const metadataUpload = await uploadJsonTo0GFromBrowser(metadata, signer);
-        const memoryUpload = await uploadJsonTo0GFromBrowser(memory, signer);
-        metadataRoot = metadataUpload.rootHash;
-        memoryRoot = memoryUpload.rootHash;
-      } catch (error) {
-        setStatus(`0G Storage upload fallback hash mode: ${error instanceof Error ? error.message : String(error)}`);
-      }
+      const metadataUpload = await uploadJsonTo0GFromBrowser(metadata, signer);
+      const memoryUpload = await uploadJsonTo0GFromBrowser(memory, signer);
+      const metadataRoot = metadataUpload.rootHash;
+      const memoryRoot = memoryUpload.rootHash;
       const capabilityHash = hashJson({ category, systemPrompt, model: clientConfig.computeModel });
-      setRoots({ metadataRoot, memoryRoot, capabilityHash });
 
-      let finalAgentIdTokenId = BigInt(agentIdTokenId);
-      if (clientConfig.agentIdContractAddress) {
-        setStatus("Minting Agent ID token...");
-        try {
-          const idContract = await agentIdContract();
-          const nextTokenId = await idContract.nextTokenId();
-          const mintTx = await idContract.mint(address, metadataRoot, bytes32(metadataRoot));
-          await mintTx.wait();
-          finalAgentIdTokenId = BigInt(nextTokenId);
-          setAgentIdTokenId(nextTokenId.toString());
-        } catch (error) {
-          setStatus(`Agent ID adapter skipped: ${error instanceof Error ? error.message : String(error)}`);
-        }
-      }
+      setStatus("Minting Agent ID token...");
+      const mintTx = await idContract.mint(address, metadataRoot, bytes32(metadataRoot));
+      await mintTx.wait();
+      const finalAgentIdTokenId = BigInt(nextTokenId);
+      setAgentIdTokenId(nextTokenIdText);
 
       setStatus("Signing launchAgent transaction on 0G Chain...");
       const contract = await agentFunCoreContract();
@@ -116,9 +120,12 @@ export function LaunchAgentForm() {
       );
       setTxHash(tx.hash);
       await tx.wait();
-      setStatus("Agent launched. It will appear in the marketplace after the next refresh.");
+      setVerifiedProof({ agentId: nextTokenIdText, metadataRoot, memoryRoot, capabilityHash, imageRoot: imageUpload.rootHash, txHash: tx.hash });
+      setStatus("Agent launched on 0G. Verified proof is ready.");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
+      setTxHash("");
+      setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", imageRoot: "", txHash: "" });
+      setStatus(getUserMessage(error, "Launch failed. Please retry."));
     } finally {
       setBusy(false);
     }
@@ -144,23 +151,35 @@ export function LaunchAgentForm() {
               {["chat", "research", "trading", "social", "game", "developer", "custom"].map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
-          <label>Agent ID token id<input value={agentIdTokenId} onChange={(event) => setAgentIdTokenId(event.target.value)} /></label>
+          <label>Identity mode<input value="Mint new Agent ID during launch" readOnly /></label>
         </div>
+        <label>
+          Agent image
+          <input
+            accept="image/png,image/jpeg,image/webp"
+            type="file"
+            onChange={(event) => selectImage(event.target.files?.[0] ?? null)}
+          />
+        </label>
         <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
         <label>System prompt<textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} /></label>
-        <button className="primary-button" disabled={busy}>{busy ? "Launching..." : "Upload + Sign Launch"}</button>
+        <button className="primary-button" disabled={busy}>{busy ? "Launching..." : "Launch verified agent"}</button>
         {status ? <p className="status-line">{status}</p> : null}
       </form>
       <aside className="glass-card launch-preview">
-        <span className="section-kicker">Launch preview</span>
+        <span className="section-kicker">Launch desk</span>
         <h2>{name || "New Agent"} <em>${symbol || "AGENT"}</em></h2>
         <p>{description}</p>
-        <div className="agent-orb">{symbol.slice(0, 2).toUpperCase()}</div>
+        {imagePreview ? (
+          <img className="agent-image-preview" src={imagePreview} alt={`${name} preview`} />
+        ) : (
+          <div className="agent-orb">{symbol.slice(0, 2).toUpperCase()}</div>
+        )}
         <div className="launch-rail">
-          <PreviewStep index="01" title="Metadata package" detail="Profile, pricing, model config, and avatar prompt." value={roots.metadataRoot} />
-          <PreviewStep index="02" title="Persistent memory" detail="Initial long-context memory snapshot for this agent." value={roots.memoryRoot} />
-          <PreviewStep index="03" title="Capability hash" detail="Verifiable hash of category, model, and system behavior." value={roots.capabilityHash} />
-          <PreviewStep index="04" title="0G Chain launch" detail="Wallet-signed transaction that registers the agent." value={txHash} />
+          <PreviewStep index="01" title="Agent profile" detail="Name, category, pricing, and model behavior prepared for 0G Storage." value={verifiedProof.metadataRoot} />
+          <PreviewStep index="02" title="Agent image" detail="Uploaded to 0G Storage and attached to the metadata package." value={verifiedProof.imageRoot} />
+          <PreviewStep index="03" title="Agent ID" detail="Minted through the connected wallet before launch." value={verifiedProof.agentId ? `Agent ID #${verifiedProof.agentId}` : ""} />
+          <PreviewStep index="04" title="0G Chain launch" detail="Confirmed wallet transaction registering the agent on-chain." value={verifiedProof.txHash || txHash} />
         </div>
       </aside>
     </section>
@@ -174,7 +193,7 @@ function PreviewStep({ index, title, detail, value }: { index: string; title: st
       <div>
         <strong>{title}</strong>
         <p>{detail}</p>
-        {value ? <code>{value}</code> : <em>Generated during launch</em>}
+        {value ? <code>{value.startsWith("0x") ? shortHash(value) : value}</code> : <em>Visible after confirmed launch</em>}
       </div>
     </div>
   );

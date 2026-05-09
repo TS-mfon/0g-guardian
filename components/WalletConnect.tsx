@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ethers } from "ethers";
+import { getUserMessage } from "@/lib/errors";
 import { connectWallet } from "@/lib/wallet";
 
 export function WalletConnect({ compact = false }: { compact?: boolean }) {
@@ -20,7 +21,7 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
       setBalance(Number(ethers.formatEther(rawBalance)).toLocaleString(undefined, { maximumFractionDigits: 4 }));
       setStatus("Ready to pay 0G network and storage fees.");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : String(error));
+      setStatus(getUserMessage(error, "Wallet connection failed. Please retry."));
     } finally {
       setBusy(false);
     }
