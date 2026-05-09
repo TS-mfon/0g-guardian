@@ -2,6 +2,8 @@ import { AgentMarketplace } from "@/components/AgentMarketplace";
 import { SiteNav } from "@/components/SiteNav";
 import { clientConfig } from "@/lib/config";
 
+export const dynamic = "force-dynamic";
+
 export default function ProofsPage() {
   return (
     <main>

@@ -1,6 +1,8 @@
 import { AgentMarketplace } from "@/components/AgentMarketplace";
 import { SiteNav } from "@/components/SiteNav";
 
+export const dynamic = "force-dynamic";
+
 export default function AgentsPage() {
   return (
     <main>

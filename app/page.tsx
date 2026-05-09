@@ -3,6 +3,8 @@ import { AgentMarketplace } from "@/components/AgentMarketplace";
 import { ContractStatus } from "@/components/ContractStatus";
 import { SiteNav } from "@/components/SiteNav";
 
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   return (
     <main>
