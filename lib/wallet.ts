@@ -20,7 +20,39 @@ export async function connectWallet() {
   await provider.send("eth_requestAccounts", []);
   await ensureZeroGNetwork(provider);
   const signer = await provider.getSigner();
-  return { provider, signer, address: await signer.getAddress() };
+  const address = await signer.getAddress();
+  rememberWallet(address);
+  return { provider, signer, address };
+}
+
+export async function getConnectedWallet() {
+  const provider = await getBrowserProvider();
+  const accounts = await provider.send("eth_accounts", []);
+  const address = Array.isArray(accounts) && accounts[0] ? String(accounts[0]) : "";
+  if (!address) return { provider, address: "", balance: "" };
+  await ensureZeroGNetwork(provider);
+  const rawBalance = await provider.getBalance(address);
+  rememberWallet(address);
+  return { provider, address, balance: ethers.formatEther(rawBalance) };
+}
+
+export function rememberWallet(address: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem("agentfun.walletConnected", "true");
+  window.localStorage.setItem("agentfun.walletAddress", address);
+  window.dispatchEvent(new CustomEvent("agentfun:wallet", { detail: { address } }));
+}
+
+export function forgetWallet() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("agentfun.walletConnected");
+  window.localStorage.removeItem("agentfun.walletAddress");
+  window.dispatchEvent(new CustomEvent("agentfun:wallet", { detail: { address: "" } }));
+}
+
+export function wantsWalletReconnect() {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem("agentfun.walletConnected") === "true";
 }
 
 export async function ensureZeroGNetwork(provider: BrowserProvider) {

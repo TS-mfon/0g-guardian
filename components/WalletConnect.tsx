@@ -1,15 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { getUserMessage } from "@/lib/errors";
-import { connectWallet } from "@/lib/wallet";
+import { connectWallet, forgetWallet, getConnectedWallet, wantsWalletReconnect } from "@/lib/wallet";
 
 export function WalletConnect({ compact = false }: { compact?: boolean }) {
   const [address, setAddress] = useState("");
   const [balance, setBalance] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+
+  async function hydrateWallet(silent = true) {
+    try {
+      const snapshot = await getConnectedWallet();
+      if (!snapshot.address) {
+        if (!silent) setStatus("No wallet connected.");
+        return;
+      }
+      setAddress(snapshot.address);
+      setBalance(Number(snapshot.balance).toLocaleString(undefined, { maximumFractionDigits: 4 }));
+      if (!silent) setStatus("Ready to pay 0G network and storage fees.");
+    } catch (error) {
+      if (!silent) setStatus(getUserMessage(error, "Wallet connection failed. Please retry."));
+    }
+  }
+
+  useEffect(() => {
+    if (wantsWalletReconnect()) void hydrateWallet(true);
+    const onWallet = () => void hydrateWallet(true);
+    const onAccounts = (accounts: unknown) => {
+      const next = Array.isArray(accounts) && accounts[0] ? String(accounts[0]) : "";
+      if (!next) {
+        forgetWallet();
+        setAddress("");
+        setBalance("");
+        setStatus("");
+        return;
+      }
+      void hydrateWallet(true);
+    };
+    window.addEventListener("agentfun:wallet", onWallet);
+    const ethereum = window.ethereum as (typeof window.ethereum & {
+      on?: (event: string, handler: (...args: any[]) => void) => void;
+      removeListener?: (event: string, handler: (...args: any[]) => void) => void;
+    });
+    ethereum?.on?.("accountsChanged", onAccounts);
+    ethereum?.on?.("chainChanged", onWallet);
+    return () => {
+      window.removeEventListener("agentfun:wallet", onWallet);
+      ethereum?.removeListener?.("accountsChanged", onAccounts);
+      ethereum?.removeListener?.("chainChanged", onWallet);
+    };
+  }, []);
 
   async function connect() {
     setBusy(true);

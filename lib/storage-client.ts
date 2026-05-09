@@ -1,30 +1,35 @@
-import { clientConfig } from "./config";
-
 export interface ClientStorageResult {
   rootHash: string;
   txHash?: string;
   sizeBytes: number;
 }
 
-export async function uploadJsonTo0GFromBrowser(payload: unknown, signer: unknown): Promise<ClientStorageResult> {
-  const encoded = new TextEncoder().encode(JSON.stringify(payload, null, 2));
-  return uploadBytesTo0GFromBrowser(encoded, signer);
+export async function uploadJsonTo0GFromBrowser(payload: unknown, _signer: unknown): Promise<ClientStorageResult> {
+  return uploadJsonThroughApi(payload);
 }
 
-export async function uploadFileTo0GFromBrowser(file: File, signer: unknown): Promise<ClientStorageResult> {
-  const encoded = new Uint8Array(await file.arrayBuffer());
-  return uploadBytesTo0GFromBrowser(encoded, signer);
+export async function uploadFileTo0GFromBrowser(file: File, _signer: unknown): Promise<ClientStorageResult> {
+  return uploadFileThroughApi(file);
 }
 
-async function uploadBytesTo0GFromBrowser(encoded: Uint8Array, signer: unknown): Promise<ClientStorageResult> {
-  const sdk = (await import("@0gfoundation/0g-storage-ts-sdk")) as any;
-  const memData = new sdk.MemData(encoded);
-  const [tree, treeErr] = await memData.merkleTree();
-  if (treeErr !== null) throw new Error(`0G Storage Merkle error: ${treeErr}`);
-  const indexer = new sdk.Indexer(clientConfig.storageIndexer);
-  const [tx, uploadErr] = await indexer.upload(memData, clientConfig.rpcUrl, signer);
-  if (uploadErr !== null) throw new Error(`0G Storage upload error: ${uploadErr}`);
-  const rootHash = tx?.rootHash ?? tree?.rootHash?.();
-  if (!rootHash) throw new Error("0G Storage upload completed without a root hash.");
-  return { rootHash: String(rootHash), txHash: tx?.txHash ? String(tx.txHash) : undefined, sizeBytes: encoded.byteLength };
+async function uploadJsonThroughApi(payload: unknown) {
+  const response = await fetch("/api/storage/upload-json", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error(await response.text());
+  const body = await response.json();
+  if (body?.mode !== "0g-storage" || !body?.rootHash) throw new Error("0G Storage upload failed.");
+  return body as ClientStorageResult;
+}
+
+async function uploadFileThroughApi(file: File) {
+  const data = new FormData();
+  data.set("file", file);
+  const response = await fetch("/api/storage/upload-file", { method: "POST", body: data });
+  if (!response.ok) throw new Error(await response.text());
+  const body = await response.json();
+  if (body?.mode !== "0g-storage" || !body?.rootHash) throw new Error("0G Storage upload failed.");
+  return body as ClientStorageResult;
 }
