@@ -105,7 +105,8 @@ main { padding: 20px; }
 }
 
 .receipt-builder,
-.wallet-card {
+.wallet-card,
+.contract-status {
   max-width: 1180px;
   margin: 18px auto 0;
 }
@@ -432,6 +433,65 @@ pre {
   font-style: normal;
 }
 
+.launch-rail {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.launch-step {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 13px;
+}
+
+.launch-step > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.launch-step.complete > span {
+  background: rgba(97, 246, 191, 0.14);
+  color: var(--green);
+}
+
+.launch-step strong {
+  display: block;
+}
+
+.launch-step p {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.launch-step em {
+  color: rgba(248, 251, 255, 0.56);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.launch-step code {
+  display: block;
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  padding: 8px;
+}
+
 .status-line {
   color: var(--muted);
   line-height: 1.6;
@@ -705,6 +765,57 @@ textarea {
   margin: 0;
 }
 
+.contract-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid rgba(112, 173, 255, 0.18);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(112, 173, 255, 0.1), rgba(97, 246, 191, 0.06)),
+    rgba(10, 15, 24, 0.72);
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+.contract-status h2 {
+  margin: 8px 0;
+}
+
+.contract-status p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.contract-badges {
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.contract-badges span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.contract-badges .ready {
+  border-color: rgba(97, 246, 191, 0.35);
+  background: rgba(97, 246, 191, 0.11);
+  color: var(--green);
+}
+
+.contract-badges .pending {
+  border-color: rgba(255, 209, 102, 0.34);
+  background: rgba(255, 209, 102, 0.09);
+  color: var(--gold);
+}
+
 .receipt-builder {
   display: grid;
   grid-template-columns: minmax(0, 0.75fr) minmax(360px, 1fr);
@@ -794,6 +905,7 @@ textarea {
 
   .receipt-builder,
   .wallet-card,
+  .contract-status,
   .launch-grid {
     grid-template-columns: 1fr;
   }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AgentMarketplace } from "@/components/AgentMarketplace";
+import { ContractStatus } from "@/components/ContractStatus";
 import { SiteNav } from "@/components/SiteNav";
 
 export default function HomePage() {
@@ -36,6 +37,7 @@ export default function HomePage() {
       <section className="content-band">
         <span className="section-kicker">Marketplace</span>
         <h2 className="section-title">Agents launched on 0G Chain</h2>
+        <ContractStatus />
         <AgentMarketplace />
       </section>
     </main>

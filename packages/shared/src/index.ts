@@ -13,6 +13,7 @@ export const agentFunCoreAbi = [
   "function launchFee() view returns (uint256)",
   "function minTaskFee() view returns (uint256)",
   "function nextAgentId() view returns (uint256)",
+  "function nextTaskId() view returns (uint256)",
   "function launchAgent(string name,string symbol,string category,uint256 agentIdTokenId,bytes32 metadataRoot,bytes32 memoryRoot,bytes32 capabilityHash) payable returns (uint256)",
   "function updateMemoryRoot(uint256 agentId,bytes32 newMemoryRoot)",
   "function setAgentActive(uint256 agentId,bool active)",
@@ -44,6 +45,7 @@ export const agentFunCoreAbi = [
 ] as const;
 
 export const agenticIdAbi = [
+  "function nextTokenId() view returns (uint256)",
   "function mint(address to,string encryptedURI,bytes32 metadataHash) returns (uint256)",
   "function ownerOf(uint256 tokenId) view returns (address)",
   "event Transfer(address indexed from,address indexed to,uint256 indexed tokenId)",

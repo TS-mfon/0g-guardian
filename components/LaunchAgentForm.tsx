@@ -7,7 +7,7 @@ import { genesisTemplates } from "@/lib/agent-templates";
 import { clientConfig } from "@/lib/config";
 import { hashJson } from "@/lib/hash";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
-import { agentFunCoreContract, connectWallet } from "@/lib/wallet";
+import { agentFunCoreContract, agentIdContract, connectWallet } from "@/lib/wallet";
 
 function bytes32(value: string) {
   return ethers.zeroPadValue(value as `0x${string}`, 32);
@@ -86,6 +86,21 @@ export function LaunchAgentForm() {
       const capabilityHash = hashJson({ category, systemPrompt, model: clientConfig.computeModel });
       setRoots({ metadataRoot, memoryRoot, capabilityHash });
 
+      let finalAgentIdTokenId = BigInt(agentIdTokenId);
+      if (clientConfig.agentIdContractAddress) {
+        setStatus("Minting Agent ID token...");
+        try {
+          const idContract = await agentIdContract();
+          const nextTokenId = await idContract.nextTokenId();
+          const mintTx = await idContract.mint(address, metadataRoot, bytes32(metadataRoot));
+          await mintTx.wait();
+          finalAgentIdTokenId = BigInt(nextTokenId);
+          setAgentIdTokenId(nextTokenId.toString());
+        } catch (error) {
+          setStatus(`Agent ID adapter skipped: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+
       setStatus("Signing launchAgent transaction on 0G Chain...");
       const contract = await agentFunCoreContract();
       const launchFee = await contract.launchFee();
@@ -93,7 +108,7 @@ export function LaunchAgentForm() {
         name,
         symbol.toUpperCase(),
         category,
-        BigInt(agentIdTokenId),
+        finalAgentIdTokenId,
         bytes32(metadataRoot),
         bytes32(memoryRoot),
         capabilityHash,
@@ -141,13 +156,26 @@ export function LaunchAgentForm() {
         <h2>{name || "New Agent"} <em>${symbol || "AGENT"}</em></h2>
         <p>{description}</p>
         <div className="agent-orb">{symbol.slice(0, 2).toUpperCase()}</div>
-        <div className="proof-lines">
-          <code>metadataRoot: {roots.metadataRoot || "created on launch"}</code>
-          <code>memoryRoot: {roots.memoryRoot || "created on launch"}</code>
-          <code>capabilityHash: {roots.capabilityHash || "created on launch"}</code>
-          <code>tx: {txHash || "wallet signature required"}</code>
+        <div className="launch-rail">
+          <PreviewStep index="01" title="Metadata package" detail="Profile, pricing, model config, and avatar prompt." value={roots.metadataRoot} />
+          <PreviewStep index="02" title="Persistent memory" detail="Initial long-context memory snapshot for this agent." value={roots.memoryRoot} />
+          <PreviewStep index="03" title="Capability hash" detail="Verifiable hash of category, model, and system behavior." value={roots.capabilityHash} />
+          <PreviewStep index="04" title="0G Chain launch" detail="Wallet-signed transaction that registers the agent." value={txHash} />
         </div>
       </aside>
     </section>
+  );
+}
+
+function PreviewStep({ index, title, detail, value }: { index: string; title: string; detail: string; value: string }) {
+  return (
+    <div className={value ? "launch-step complete" : "launch-step"}>
+      <span>{index}</span>
+      <div>
+        <strong>{title}</strong>
+        <p>{detail}</p>
+        {value ? <code>{value}</code> : <em>Generated during launch</em>}
+      </div>
+    </div>
   );
 }
