@@ -11,6 +11,7 @@
     "test:contracts": "forge test --root contracts",
     "deploy:contract": "forge create contracts/src/AgentFunCore.sol:AgentFunCore --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY --broadcast",
     "deploy:mainnet": "forge build --root contracts && tsx scripts/deploy-mainnet.ts",
+    "seed:mainnet": "tsx scripts/seed-mainnet-agents.ts",
     "da:submit": "tsx scripts/da-submit.ts",
     "agent:demo": "tsx agents/memory-agent.ts",
     "agents:smoke": "tsx scripts/five-agent-smoke.ts"
