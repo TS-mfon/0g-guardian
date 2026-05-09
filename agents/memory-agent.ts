@@ -1,14 +1,16 @@
-import { Verdict } from "@shared/index";
+import { genesisTemplates } from "../lib/agent-templates";
 
 const demo = {
-  guardian: "DeFi Approval Sentinel",
-  transaction: "Unlimited approval to unknown spender",
-  result: {
-    riskScore: 875,
-    verdict: Verdict.BLOCK,
-    detectedRisks: ["ERC20 approval call detected", "Unlimited allowance pattern detected"],
-    recommendedAction: "Do not sign until the spender is independently verified."
-  }
+  workflow: "RunAgentTaskWorkflow",
+  steps: [
+    "verify task payment on 0G Chain",
+    "load metadata and memory from 0G Storage",
+    "run 0G Compute",
+    "upload result and new memory to 0G Storage",
+    "submit DA commitment",
+    "complete task on 0G Chain"
+  ],
+  firstGenesisAgent: genesisTemplates[0]
 };
 
 console.log(JSON.stringify(demo, null, 2));

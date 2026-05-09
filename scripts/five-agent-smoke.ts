@@ -1,9 +1,11 @@
-const agents = [
-  "DeFi Approval Sentinel",
-  "Swap Slippage Guardian",
-  "SocialFi Permission Guard",
-  "DAO Execution Reviewer",
-  "DePIN Device Policy Agent"
-];
+import { genesisTemplates } from "../lib/agent-templates";
 
-console.log(JSON.stringify({ ok: true, agents }, null, 2));
+console.log(JSON.stringify({
+  ok: true,
+  product: "Agent.fun on 0G",
+  genesisAgents: genesisTemplates.map((agent) => ({
+    name: agent.name,
+    symbol: agent.symbol,
+    category: agent.category
+  }))
+}, null, 2));

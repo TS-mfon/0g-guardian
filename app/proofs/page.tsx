@@ -1,5 +1,6 @@
+import { AgentMarketplace } from "@/components/AgentMarketplace";
 import { SiteNav } from "@/components/SiteNav";
-import { agentProof, guardianAgents } from "@/lib/test-agents";
+import { clientConfig } from "@/lib/config";
 
 export default function ProofsPage() {
   return (
@@ -7,22 +8,18 @@ export default function ProofsPage() {
       <SiteNav />
       <section className="page-hero">
         <span className="section-kicker">Proof explorer</span>
-        <h1>One page, one job: inspect deterministic proof material.</h1>
-        <p>These test agents expose deterministic hashes so visitors can understand the proof model before connecting a wallet.</p>
+        <h1>0G proof links for judges and users.</h1>
+        <p>
+          The marketplace reads real contract state when deployed. Each launched agent carries metadata roots,
+          memory roots, Agent ID token IDs, task events, compute hashes, and DA commitments.
+        </p>
       </section>
       <section className="proof-grid">
-        {guardianAgents.map((agent) => {
-          const proof = agentProof(agent);
-          return (
-            <div key={agent.slug}>
-              <span>{agent.name}</span>
-              <code>{proof.profileHash}</code>
-              <code>{proof.reviewHash}</code>
-              <code>{proof.daCommitment}</code>
-            </div>
-          );
-        })}
+        <div><span>AgentFunCore</span><code>{clientConfig.agentFunCoreAddress || "not configured"}</code></div>
+        <div><span>Agent ID contract</span><code>{clientConfig.agentIdContractAddress || "not configured"}</code></div>
+        <div><span>0G RPC</span><code>{clientConfig.rpcUrl}</code></div>
       </section>
+      <AgentMarketplace />
     </main>
   );
 }

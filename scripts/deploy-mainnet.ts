@@ -45,20 +45,20 @@ async function main() {
   const balance = await provider.getBalance(wallet.address);
   if (balance === 0n) throw new Error(`Deployer ${wallet.address} has no 0G balance.`);
 
-  const guardian = await deploy("GuardianRegistry");
-  const receipts = await deploy("ProtectionReceipt");
+  const agentFun = await deploy("AgentFunCore");
+  const agentId = await deploy("MockAgentId");
   const env = [
-    `NEXT_PUBLIC_GUARDIAN_REGISTRY_ADDRESS=${guardian.address}`,
-    `NEXT_PUBLIC_PROTECTION_RECEIPT_ADDRESS=${receipts.address}`,
+    `NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS=${agentFun.address}`,
+    `NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS=${agentId.address}`,
     `NEXT_PUBLIC_0G_CHAIN_ID=16661`,
     `NEXT_PUBLIC_0G_CHAIN_ID_HEX=0x4115`,
     `NEXT_PUBLIC_0G_RPC_URL=${rpcUrl}`,
     "NEXT_PUBLIC_0G_EXPLORER=https://chainscan.0g.ai",
     "NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai",
     "NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai",
-    `GUARDIAN_REGISTRY_DEPLOY_TX=${guardian.txHash}`,
-    `PROTECTION_RECEIPT_DEPLOY_TX=${receipts.txHash}`,
-    `DEPLOYMENT_BLOCK=${Math.min(guardian.blockNumber, receipts.blockNumber)}`
+    `AGENT_FUN_CORE_DEPLOY_TX=${agentFun.txHash}`,
+    `AGENT_ID_DEPLOY_TX=${agentId.txHash}`,
+    `DEPLOYMENT_BLOCK=${Math.min(agentFun.blockNumber, agentId.blockNumber)}`
   ].join("\n");
   writeFileSync("deployment.env", `${env}\n`);
   console.log(env);

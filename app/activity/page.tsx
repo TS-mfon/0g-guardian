@@ -1,1 +1,1 @@
-export { default } from "../proofs/page";
+export { default } from "../arena/page";

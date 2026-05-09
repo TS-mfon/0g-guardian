@@ -1,15 +1,15 @@
 {
-  "name": "0g-guardian",
+  "name": "agent-fun-0g",
   "version": "0.1.0",
   "private": true,
-  "description": "Modern agentic transaction safety built with 0G.",
+  "description": "Launch, own, use, and trade AI agents powered by the full 0G stack.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test:contracts": "forge test --root contracts",
-    "deploy:contract": "forge create contracts/src/GuardianRegistry.sol:GuardianRegistry --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY --broadcast",
+    "deploy:contract": "forge create contracts/src/AgentFunCore.sol:AgentFunCore --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY --broadcast",
     "deploy:mainnet": "forge build --root contracts && tsx scripts/deploy-mainnet.ts",
     "da:submit": "tsx scripts/da-submit.ts",
     "agent:demo": "tsx agents/memory-agent.ts",

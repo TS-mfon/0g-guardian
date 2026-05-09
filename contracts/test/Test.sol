@@ -5,6 +5,7 @@ interface Vm {
     function prank(address) external;
     function warp(uint256) external;
     function expectRevert(bytes4) external;
+    function deal(address who, uint256 newBalance) external;
 }
 
 contract Test {

@@ -41,8 +41,7 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
         <span className="section-kicker">Wallet payments</span>
         <h2>Connect a wallet to pay for 0G services.</h2>
         <p>
-          Your wallet signs 0G Chain receipts and pays network costs for Storage uploads, DA commitments,
-          and guardian registration when contracts are configured.
+          Your wallet signs agent launches, key trades, paid tasks, and revenue claims on 0G Chain.
         </p>
       </div>
       <div className="wallet-actions">

@@ -1,5 +1,5 @@
 import { BrowserProvider, Contract, ethers } from "ethers";
-import { agenticIdAbi, guardianRegistryAbi, protectionReceiptAbi } from "@shared/index";
+import { agentFunCoreAbi, agenticIdAbi } from "@shared/index";
 import { clientConfig } from "./config";
 
 declare global {
@@ -41,14 +41,9 @@ export async function ensureZeroGNetwork(provider: BrowserProvider) {
   }
 }
 
-export async function guardianRegistryContract() {
+export async function agentFunCoreContract() {
   const { signer } = await connectWallet();
-  return new Contract(clientConfig.guardianRegistryAddress, guardianRegistryAbi, signer);
-}
-
-export async function protectionReceiptContract() {
-  const { signer } = await connectWallet();
-  return new Contract(clientConfig.protectionReceiptAddress, protectionReceiptAbi, signer);
+  return new Contract(clientConfig.agentFunCoreAddress, agentFunCoreAbi, signer);
 }
 
 export async function agentIdContract() {

@@ -1,39 +1,46 @@
-# 0G Guardian
+# Agent.fun on 0G
 
-0G Guardian lets users run AI guard agents before signing transactions, then persist review evidence through 0G infrastructure.
+Agent.fun lets anyone launch, own, use, and trade AI agents powered by 0G Compute, Storage, DA, Chain, and Agent ID.
 
-## What It Does
+## Overview
 
-0G Guardian is a no-backend agentic firewall for wallet actions. Users pick a specialized guardian agent, review a transaction intent, inspect a plain-English risk result, and prepare proof material for 0G Storage, 0G DA, and 0G Chain receipts.
+Agent.fun is a pump.fun-style launchpad for AI agents. Creators launch Agent ID-backed agents, users buy agent keys or pay for tasks, and every useful action creates verifiable 0G proof material: Storage roots, Compute hashes, DA commitments, and Chain events.
 
-The app now has separate pages for each function:
+## 0G Modules
 
-- `/` landing page
-- `/for-users` user pitch
-- `/for-developers` developer pitch
-- `/agents` test guardian directory
-- `/agents/[slug]` individual registered test agent pages
-- `/register` guardian registration payload builder
-- `/review` transaction review console
-- `/proofs` deterministic proof material explorer
+- **0G Chain:** `AgentFunCore` records agent launches, key trades, paid tasks, memory updates, and revenue claims.
+- **0G Storage:** agent metadata, initial memory, task prompts, task results, and updated memory snapshots are uploaded as JSON roots.
+- **0G Compute:** serverless routes call 0G Compute for profile generation and agent task execution when credentials are configured.
+- **0G DA:** task and activity payloads produce DA commitments through `/api/da/submit`, ready for a live DA gateway.
+- **Agent ID:** every launched agent stores an `agentIdTokenId`; `MockAgentId` is included as a local/test adapter until the official deployment address is configured.
 
-## Test Agents
+## Pages
 
-The app includes three seeded test guardians so visitors do not land on empty or fake counters:
+- `/` product landing and marketplace preview
+- `/launch` wallet-signed agent launch flow
+- `/agents` marketplace loaded from `AgentFunCore`
+- `/agents/[id]` agent profile, key trading, paid task creation, proof roots
+- `/arena` challenge surface for launched agents
+- `/portfolio` wallet dashboard for created agents, keys, tasks, and revenue
+- `/proofs` judge-facing proof explorer
+- `/developers` contract/API integration docs
 
-- DeFi Approval Sentinel
-- Swap Slippage Guardian
-- SocialFi Permission Guard
+## Contracts
 
-Each agent has its own page, policy, sample transaction, review output, and deterministic proof hashes.
+Main contract:
 
-## 0G Integration
+```text
+contracts/src/AgentFunCore.sol
+```
 
-- `GuardianRegistry` and `ProtectionReceipt` contracts are included for 0G Chain.
-- Browser SDK helpers are included for 0G Storage uploads.
-- The review page supports the 0G Compute OpenAI-compatible route when a browser-only API key is provided.
-- DA proof material is modeled through deterministic commitments and the `npm run da:submit` helper.
-- Agent ID token ids are attached to each guardian profile.
+Capabilities:
+
+- `launchAgent(...) payable`
+- `buyKeys(agentId, keysOut) payable`
+- `sellKeys(agentId, keysIn, minOut)`
+- `createTask(agentId, promptRoot) payable`
+- `completeTask(taskId, resultRoot, computeHash, daCommitment, newMemoryRoot)`
+- `claimRevenue()`
 
 ## Local Development
 
@@ -47,31 +54,53 @@ npm run dev
 
 ## Deployment
 
-Target GitHub repo:
-
-```text
-https://github.com/ts-mfon/0g-guardian
+```bash
+DEPLOYER_PRIVATE_KEY=0x... npm run deploy:mainnet
 ```
 
-Target Vercel URL:
+The script writes:
 
 ```text
-https://0g-guardian.vercel.app
+NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS=0x...
+NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS=0x...
+AGENT_FUN_CORE_DEPLOY_TX=0x...
+AGENT_ID_DEPLOY_TX=0x...
 ```
 
-## Submission Copy
+Set those values in Vercel and redeploy.
 
-Project name: **0G Guardian**
+## Submission Fields
+
+Project name:
+**Agent.fun on 0G**
 
 One-sentence description:
-**0G Guardian lets users run AI guard agents before signing transactions, then persist review evidence through 0G infrastructure.**
+**Agent.fun lets anyone launch, own, use, and trade AI agents powered by 0G Compute, Storage, DA, Chain, and Agent ID.**
 
-X post template:
+Repository:
+`https://github.com/TS-mfon/0g-guardian`
+
+Frontend:
+`https://0g-guardian.vercel.app`
+
+0G proof links:
+Fill after mainnet deployment:
+
+- AgentFunCore contract:
+- ChainScan:
+- AgentLaunched tx:
+- Storage root:
+- DA commitment:
+- Agent ID token:
+
+## X Post Template
 
 ```text
-Introducing 0G Guardian for the #0GHackathon.
+Introducing Agent.fun on 0G for the #0GHackathon.
 
-AI guard agents review wallet transactions before users sign, explain the risk, and prepare verifiable proof material with 0G.
+Launch AI agents, tokenize them as Agent ID iNFTs, let users pay to use them, and track memory, compute, DA proofs, and revenue on 0G.
+
+Built with 0G Storage, 0G Compute, 0G Chain, 0G DA, and Agent ID.
 
 #BuildOn0G
 @0G_labs @0g_CN @0g_Eco @HackQuest_

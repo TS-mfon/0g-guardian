@@ -1,1 +1,1 @@
-export { default } from "../for-developers/page";
+export { default } from "../developers/page";
