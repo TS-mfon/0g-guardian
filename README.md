@@ -1,107 +1,223 @@
 # Agent.fun on 0G
 
-Agent.fun lets anyone launch, own, use, and trade AI agents powered by 0G Compute, Storage, DA, Chain, and Agent ID.
+Launch, own, use, and trade AI agents with Agent ID, 0G Chain, 0G Storage, 0G Compute, and DA-backed task proofs.
 
-## Overview
+## Project Overview
 
-Agent.fun is a pump.fun-style launchpad for AI agents. Creators launch Agent ID-backed agents, users buy agent keys or pay for tasks, and every useful action creates verifiable 0G proof material: Storage roots, Compute hashes, DA commitments, and Chain events.
+Agent.fun is a pump.fun-style launchpad for AI agents on 0G. A creator connects a wallet, launches an Agent ID-backed AI agent, and users can buy agent keys, hire the agent for paid tasks, and trace activity through on-chain records and proof roots.
 
-## 0G Modules
+The product solves a clear AI x Web3 problem: AI agents are usually hard to own, monetize, verify, and reuse across apps. Agent.fun turns an agent into an on-chain economic object with identity, memory, task payments, compute output, and revenue settlement.
 
-- **0G Chain:** `AgentFunCore` records agent launches, key trades, paid tasks, memory updates, and revenue claims.
-- **0G Storage:** agent metadata, initial memory, task prompts, task results, and updated memory snapshots are uploaded as JSON roots.
-- **0G Compute:** serverless routes call 0G Compute for profile generation and agent task execution when credentials are configured.
-- **0G DA:** task and activity payloads produce DA commitments through `/api/da/submit`, ready for a live DA gateway.
-- **Agent ID:** every launched agent stores an `agentIdTokenId`; `MockAgentId` is included as a local/test adapter until the official deployment address is configured.
+Live demo: https://0gagentfun.vercel.app  
+Repository: https://github.com/TS-mfon/0g-guardian
 
-## Pages
+## Basic Project Information
 
-- `/` product landing and marketplace preview
-- `/launch` wallet-signed agent launch flow
-- `/agents` marketplace loaded from `AgentFunCore`
-- `/agents/[id]` agent profile, key trading, paid task creation, proof roots
-- `/arena` challenge surface for launched agents
-- `/portfolio` wallet dashboard for created agents, keys, tasks, and revenue
-- `/proofs` judge-facing proof explorer
-- `/developers` contract/API integration docs
+Project name: **Agent.fun on 0G**
 
-## Contracts
+One-sentence description, under 30 words:
 
-Main contract:
+**Agent.fun lets users launch, own, hire, and trade AI agents powered by Agent ID, 0G Storage, 0G Compute, and 0G Chain.**
+
+Short summary:
+
+- Users launch AI agents with a connected wallet.
+- Each agent receives an Agent ID token and is registered on 0G Chain.
+- Agent profile and memory payloads are uploaded to 0G Storage.
+- Users can buy/sell agent keys, create paid tasks, and complete tasks with compute, storage, and DA proof material.
+- The product creates financial rails for an agent economy: ownership, usage, revenue, and verifiable activity.
+
+## System Architecture
 
 ```text
-contracts/src/AgentFunCore.sol
+User Wallet
+  |
+  | signs Agent ID mint, launch, key trades, paid tasks
+  v
+Frontend on Vercel
+  |
+  | uploads agent metadata, memory, task prompts/results
+  v
+0G Storage
+  |
+  | returns root hashes used as proof references
+  v
+Agent.fun API Routes
+  |
+  | /api/compute/run-agent -> 0G Compute-compatible inference flow
+  | /api/da/submit -> DA commitment payload for task completion
+  v
+0G Chain
+  |
+  | AgentFunCore records launches, keys, tasks, revenue, roots, hashes
+  v
+0G Explorer / ChainScan
 ```
 
-Capabilities:
+Main product flow:
 
-- `launchAgent(...) payable`
-- `buyKeys(agentId, keysOut) payable`
-- `sellKeys(agentId, keysIn, minOut)`
-- `createTask(agentId, promptRoot) payable`
-- `completeTask(taskId, resultRoot, computeHash, daCommitment, newMemoryRoot)`
-- `claimRevenue()`
+1. Creator connects wallet.
+2. App uploads metadata and initial memory JSON to 0G Storage.
+3. Wallet mints an Agent ID token.
+4. Wallet calls `launchAgent` on `AgentFunCore`.
+5. Agent appears in the marketplace from live 0G Chain reads.
+6. Users can buy keys, create paid tasks, run compute, store result roots, submit DA commitments, and complete tasks on-chain.
 
-## Local Development
+## 0G Modules Used
+
+### 0G Chain
+
+`AgentFunCore` is deployed on 0G mainnet and records:
+
+- agent launches
+- Agent ID token references
+- key purchases and sales
+- paid task creation
+- task completion proof roots
+- revenue claims
+
+### Agent ID
+
+Each launched agent mints an Agent ID token before calling `launchAgent`. The Agent ID token ID is stored in the agent record and shown in the marketplace.
+
+### 0G Storage
+
+Agent metadata, initial memory, task prompts, task results, and updated memory payloads are uploaded as JSON files. Their root hashes are stored or used in 0G Chain transactions.
+
+### 0G Compute
+
+The app includes an agent execution route compatible with 0G Compute. When compute credentials are configured, task prompts are sent to the configured model. The output is hashed and attached to the task completion flow.
+
+### 0G Data Availability
+
+The task completion flow creates DA commitment payloads through `/api/da/submit`. Those commitments are passed into `completeTask` with result and compute hashes.
+
+## 0G Integration Proof
+
+0G mainnet contract:
+
+```text
+AgentFunCore: 0xc90197fBAe660e0f4b091b4f5E0215fEE0336A67
+Agent ID adapter: 0x67E043731d26A7D27C00Bc3389F01162Cb18007d
+```
+
+Explorer links:
+
+- AgentFunCore: https://chainscan.0g.ai/address/0xc90197fBAe660e0f4b091b4f5E0215fEE0336A67
+- Agent ID adapter: https://chainscan.0g.ai/address/0x67E043731d26A7D27C00Bc3389F01162Cb18007d
+
+Deployment transactions:
+
+- AgentFunCore deploy tx: `0xc5ec73221739f04b11b8cf7967dba9cd223672665858cd2ea772067a513220f2`
+- Agent ID deploy tx: `0xb1744723eff88c2f530b2752766c1994ab57de31039e3d6ca8bab6f240db8845`
+
+Seeded live agents:
+
+- AlphaSeer, Agent ID 1
+- MemeSmith, Agent ID 2
+- AuditLite, Agent ID 3
+- QuestMaster, Agent ID 4
+- DataScout, Agent ID 5
+
+Example seeded launch transactions:
+
+- AlphaSeer: `0xe8b1904ab4a29f8df51ef9a21220f6ee4ea3fd6ba8eaec196b8c38ec10393b08`
+- MemeSmith: `0x8d2946f3f7fffb02eb56fb476be8ed057aacaa09050c77f6f0044df889f0c740`
+- AuditLite: `0x96794c711c02f22a7ab3242c213e6b490ed4dbb66b8e3d36559e08d9abb09427`
+- QuestMaster: `0x520f6eb1a73f45ea6479bbe03c40bf63a23a05c7112e5c5024477b0dd9278059`
+- DataScout: `0xcd9233aa54d4b62ff048775246571432f0db3edc51866e7a474f436c2d61ec1f`
+
+0G Storage proof example from production upload route:
+
+```text
+rootHash: 0xff806b4b55d7360fe8662298f312fbac72aacc74b5a8fff91917adba0b2b1b81
+txHash:   0xf5842ac3f3986e62ceb89f753ee0b16f544b4068c33bd6892f4b00495e5bc05a
+```
+
+## Local Deployment and Reproduction
+
+Prerequisites:
+
+- Node.js 22+
+- npm
+- Foundry
+- 0G mainnet wallet with 0G for gas
+
+Install:
 
 ```bash
 npm install
-cp .env.example .env.local
+```
+
+Create `.env.local`:
+
+```bash
+NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS=0xc90197fBAe660e0f4b091b4f5E0215fEE0336A67
+NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS=0x67E043731d26A7D27C00Bc3389F01162Cb18007d
+NEXT_PUBLIC_0G_CHAIN_ID=16661
+NEXT_PUBLIC_0G_CHAIN_ID_HEX=0x4115
+NEXT_PUBLIC_0G_RPC_URL=https://rpc.ankr.com/0g_mainnet_evm
+NEXT_PUBLIC_0G_EXPLORER=https://chainscan.0g.ai
+NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai
+NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai
+SERVER_WALLET_PRIVATE_KEY=0x...
+```
+
+Run checks:
+
+```bash
 npm run test:contracts
+npm run typecheck
 npm run build
+```
+
+Run locally:
+
+```bash
 npm run dev
 ```
 
-## Deployment
-
-```bash
-DEPLOYER_PRIVATE_KEY=0x... npm run deploy:mainnet
-```
-
-The script writes:
+Open:
 
 ```text
-NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS=0x...
-NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS=0x...
-AGENT_FUN_CORE_DEPLOY_TX=0x...
-AGENT_ID_DEPLOY_TX=0x...
+http://localhost:3000
 ```
 
-Set those values in Vercel and redeploy.
+## Reviewer Notes
 
-## Submission Fields
+- Use any EVM wallet that supports custom networks.
+- Network: 0G Mainnet, chain ID `16661`, hex `0x4115`.
+- Public RPC used by the app: `https://rpc.ankr.com/0g_mainnet_evm`.
+- The app asks the wallet to switch/add 0G Mainnet when needed.
+- Launching an agent requires 0G for gas and launch fee.
+- The five seeded agents can be viewed without a wallet on `/agents`.
+- Creating new agents requires a wallet signature.
 
-Project name:
-**Agent.fun on 0G**
+## API Documentation
 
-One-sentence description:
-**Agent.fun lets anyone launch, own, use, and trade AI agents powered by 0G Compute, Storage, DA, Chain, and Agent ID.**
+Detailed API notes are in [docs/api.md](docs/api.md).
 
-Repository:
-`https://github.com/TS-mfon/0g-guardian`
+## 0G Integration Tutorial
 
-Frontend:
-`https://0g-guardian.vercel.app`
+Technical integration walkthrough is in [docs/0g-integration-tutorial.md](docs/0g-integration-tutorial.md).
 
-0G proof links:
-Fill after mainnet deployment:
+## Pitch Deck
 
-- AgentFunCore contract:
-- ChainScan:
-- AgentLaunched tx:
-- Storage root:
-- DA commitment:
-- Agent ID token:
+Slide outline is in [docs/pitch-deck.md](docs/pitch-deck.md).
+
+## User Testing Notes
+
+Testing notes are in [docs/user-testing-notes.md](docs/user-testing-notes.md).
 
 ## X Post Template
 
 ```text
 Introducing Agent.fun on 0G for the #0GHackathon.
 
-Launch AI agents, tokenize them as Agent ID iNFTs, let users pay to use them, and track memory, compute, DA proofs, and revenue on 0G.
+Launch AI agents, mint Agent ID ownership, let users hire them, and trace memory, compute, DA proofs, and revenue on 0G.
 
-Built with 0G Storage, 0G Compute, 0G Chain, 0G DA, and Agent ID.
+Demo: https://0gagentfun.vercel.app
 
-#BuildOn0G
+#BuildOn0G #0GHackathon
 @0G_labs @0g_CN @0g_Eco @HackQuest_
 ```

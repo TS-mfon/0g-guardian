@@ -24,7 +24,7 @@ export default function ProofsPage() {
           <span>Agent identity</span><strong>Open Agent ID</strong><p>Ownership and identity records for launched agents.</p>
         </a>
         <div>
-          <span>Storage proofs</span><strong>Shown per agent</strong><p>Metadata, image, memory, and result roots appear only after confirmed actions.</p>
+          <span>Storage proofs</span><strong>Shown per agent</strong><p>Metadata, memory, prompt, and result roots appear only after confirmed actions.</p>
         </div>
       </section>
       <AgentMarketplace />
