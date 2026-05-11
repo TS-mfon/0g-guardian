@@ -209,15 +209,4 @@ Slide outline is in [docs/pitch-deck.md](docs/pitch-deck.md).
 
 Testing notes are in [docs/user-testing-notes.md](docs/user-testing-notes.md).
 
-## X Post Template
 
-```text
-Introducing Agent.fun on 0G for the #0GHackathon.
-
-Launch AI agents, mint Agent ID ownership, let users hire them, and trace memory, compute, DA proofs, and revenue on 0G.
-
-Demo: https://0gagentfun.vercel.app
-
-#BuildOn0G #0GHackathon
-@0G_labs @0g_CN @0g_Eco @HackQuest_
-```
