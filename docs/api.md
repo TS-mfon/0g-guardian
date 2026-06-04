@@ -54,7 +54,7 @@ Request:
     "prompt": "Review this Solidity function.",
     "createdAt": "2026-05-09T00:00:00.000Z"
   },
-  "model": "qwen/qwen-2.5-7b-instruct"
+  "model": "zai-org/GLM-5-FP8"
 }
 ```
 
@@ -64,7 +64,7 @@ Response:
 {
   "response": "Task response...",
   "provider": "0G Compute workflow",
-  "model": "qwen/qwen-2.5-7b-instruct",
+  "model": "zai-org/GLM-5-FP8",
   "computeHash": "0x..."
 }
 ```
@@ -96,7 +96,7 @@ Request:
     "agentIdTokenId": "3",
     "avatar": { "prompt": "Audit AI agent" },
     "systemPrompt": "Review smart contracts carefully.",
-    "model": { "provider": "0G Compute", "modelId": "deepseek-v4-flash", "teeRequired": false },
+    "model": { "provider": "0G Compute", "modelId": "zai-org/GLM-5-FP8", "teeRequired": false },
     "pricing": { "minTaskFee": "0.0005", "chatFee": "0.0005", "creatorFeeBps": 300 },
     "createdAt": "2026-06-04T00:00:00.000Z"
   },
@@ -107,7 +107,7 @@ Request:
     "prompt": "Review this Solidity function.",
     "createdAt": "2026-06-04T00:00:00.000Z"
   },
-  "model": "deepseek-v4-flash"
+  "model": "zai-org/GLM-5-FP8"
 }
 ```
 

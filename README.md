@@ -161,7 +161,7 @@ NEXT_PUBLIC_0G_EXPLORER=https://chainscan.0g.ai
 NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai
 NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai
 NEXT_PUBLIC_0G_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
-NEXT_PUBLIC_0G_COMPUTE_MODEL=deepseek-v4-flash
+NEXT_PUBLIC_0G_COMPUTE_MODEL=zai-org/GLM-5-FP8
 SERVER_WALLET_PRIVATE_KEY=0x...
 EXECUTOR_PRIVATE_KEY=0x...
 OG_COMPUTE_KEY=...
@@ -220,4 +220,3 @@ Slide outline is in [docs/pitch-deck.md](docs/pitch-deck.md).
 ## User Testing Notes
 
 Testing notes are in [docs/user-testing-notes.md](docs/user-testing-notes.md).
-

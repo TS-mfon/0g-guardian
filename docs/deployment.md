@@ -24,7 +24,7 @@ NEXT_PUBLIC_0G_EXPLORER=https://chainscan.0g.ai
 NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai
 NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai
 NEXT_PUBLIC_0G_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
-NEXT_PUBLIC_0G_COMPUTE_MODEL=qwen/qwen-2.5-7b-instruct
+NEXT_PUBLIC_0G_COMPUTE_MODEL=zai-org/GLM-5-FP8
 OG_COMPUTE_KEY=
 OG_DA_GATEWAY_URL=
 ```

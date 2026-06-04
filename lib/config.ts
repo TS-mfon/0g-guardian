@@ -26,7 +26,7 @@ export const clientConfig = {
   agentIdContractAddress: process.env.NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS ?? "",
   daGatewayUrl: process.env.NEXT_PUBLIC_DA_GATEWAY_URL ?? "",
   computeBaseUrl: process.env.NEXT_PUBLIC_0G_COMPUTE_BASE_URL ?? "https://router-api.0g.ai/v1",
-  computeModel: process.env.NEXT_PUBLIC_0G_COMPUTE_MODEL ?? "qwen/qwen-2.5-7b-instruct"
+  computeModel: process.env.NEXT_PUBLIC_0G_COMPUTE_MODEL ?? "zai-org/GLM-5-FP8"
 };
 
 export function isAddressConfigured(address: string) {
