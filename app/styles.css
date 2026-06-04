@@ -547,6 +547,42 @@ pre {
   align-self: start;
 }
 
+.compute-key-panel,
+.compute-explainer {
+  display: grid;
+  gap: 14px;
+  align-self: start;
+}
+
+.compute-key-panel p,
+.compute-explainer p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.compute-route {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 12px;
+}
+
+.compute-route span {
+  color: var(--pink);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.compute-route strong {
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .wide-grid {
   max-width: 1180px;
   margin: 0 auto 50px;

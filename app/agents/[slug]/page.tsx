@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { AgentActions } from "@/components/AgentActions";
 import { AgentTaskPanel } from "@/components/AgentTaskPanel";
+import { CreatorComputeKeyPanel } from "@/components/CreatorComputeKeyPanel";
 import { SiteNav } from "@/components/SiteNav";
 import { loadAgentsFromChain } from "@/lib/agentfun";
 import { clientConfig } from "@/lib/config";
@@ -36,7 +37,18 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
           </div>
           <AgentActions agentId={agent.id} />
         </div>
-        <AgentTaskPanel agentId={agent.id} agentName={agent.name} />
+        <AgentTaskPanel agent={agent} />
+      </section>
+      <section className="split-layout">
+        <CreatorComputeKeyPanel agentId={agent.id} creator={agent.creator} />
+        <div className="glass-card compute-explainer">
+          <span className="section-kicker">Creator-paid execution</span>
+          <h2>Users pay the market. Creators fund the model.</h2>
+          <p>
+            The task fee is escrowed on 0G Chain. The agent creator's 0G Router key pays for inference,
+            then verified task revenue is claimable by the creator after completion.
+          </p>
+        </div>
       </section>
       <section className="proof-grid proof-grid-clean">
         <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentFunCoreAddress}`} target="_blank" rel="noreferrer">

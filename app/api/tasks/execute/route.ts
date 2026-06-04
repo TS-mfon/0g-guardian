@@ -4,6 +4,7 @@ import { agentFunCoreAbi, agentMemorySchema, agentMetadataSchema, taskPromptSche
 import { clientConfig } from "@/lib/config";
 import { hashJson } from "@/lib/hash";
 import { runAgentTask } from "@/lib/compute-client";
+import { loadCreatorComputeKey } from "@/lib/creator-compute-store";
 import { uploadBytesTo0GFromServer } from "@/lib/storage-server";
 
 function bytes32(value: string) {
@@ -59,7 +60,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: { code: "TASK_UNPAID", message: "This task has no escrowed payment." } }, { status: 402 });
     }
 
-    const result = await runAgentTask({ metadata, prompt, model: String(body.model ?? clientConfig.computeModel) });
+    const creatorCompute = await loadCreatorComputeKey(prompt.agentId);
+    const result = await runAgentTask({
+      metadata,
+      prompt,
+      model: creatorCompute.model || String(body.model ?? clientConfig.computeModel),
+      apiKey: creatorCompute.apiKey,
+      baseUrl: creatorCompute.baseUrl
+    });
     const computeHash = hashJson(result);
     const resultPayload = {
       version: "1.0",

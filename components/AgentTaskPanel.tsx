@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { ethers } from "ethers";
 import { agentMetadataSchema, taskPromptSchema } from "@shared/index";
+import { AgentView } from "@/lib/agentfun";
 import { clientConfig } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
@@ -12,8 +13,8 @@ function bytes32(value: string) {
   return ethers.zeroPadValue(value as `0x${string}`, 32);
 }
 
-export function AgentTaskPanel({ agentId, agentName }: { agentId: string; agentName: string }) {
-  const [prompt, setPrompt] = useState(`Ask ${agentName} to complete a useful task.`);
+export function AgentTaskPanel({ agent }: { agent: AgentView }) {
+  const [prompt, setPrompt] = useState(`Ask ${agent.name} to complete a useful task.`);
   const [status, setStatus] = useState("");
   const [taskTx, setTaskTx] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,7 +27,7 @@ export function AgentTaskPanel({ agentId, agentName }: { agentId: string; agentN
       const { signer, address } = await connectWallet();
       const payload = taskPromptSchema.parse({
         version: "1.0",
-        agentId,
+        agentId: agent.id,
         requester: address,
         prompt,
         createdAt: new Date().toISOString()
@@ -38,7 +39,7 @@ export function AgentTaskPanel({ agentId, agentName }: { agentId: string; agentN
       const fee = await contract.minTaskFee();
       const taskId = await contract.nextTaskId();
       setStatus("Signing paid task transaction...");
-      const tx = await contract.createTask(BigInt(agentId), bytes32(promptRoot), { value: fee });
+      const tx = await contract.createTask(BigInt(agent.id), bytes32(promptRoot), { value: fee });
       setTaskTx(tx.hash);
       await tx.wait();
       setStatus("Task paid. Sending it to the verified executor...");
@@ -46,14 +47,14 @@ export function AgentTaskPanel({ agentId, agentName }: { agentId: string; agentN
       const metadata = agentMetadataSchema.parse({
         version: "1.0",
         app: "agent.fun",
-        name: agentName,
-        symbol: agentName.slice(0, 5).toUpperCase(),
-        description: `${agentName} task execution profile.`,
-        category: "custom",
-        creator: address,
-        agentIdTokenId: agentId,
-        avatar: { prompt: `${agentName} AI agent` },
-        systemPrompt: `You are ${agentName}, an autonomous 0G agent. Complete paid tasks clearly and concisely.`,
+        name: agent.name,
+        symbol: agent.symbol,
+        description: `${agent.name} task execution profile.`,
+        category: agent.category,
+        creator: agent.creator,
+        agentIdTokenId: agent.agentIdTokenId,
+        avatar: { prompt: `${agent.name} AI agent` },
+        systemPrompt: `You are ${agent.name}, an autonomous 0G agent. Complete paid tasks clearly and concisely.`,
         model: { provider: "0G Compute", modelId: clientConfig.computeModel, teeRequired: false },
         pricing: { minTaskFee: "0.0005", chatFee: "0.0005", creatorFeeBps: 300 },
         createdAt: new Date().toISOString()
@@ -77,7 +78,7 @@ export function AgentTaskPanel({ agentId, agentName }: { agentId: string; agentN
   return (
     <form className="glass-card task-panel" onSubmit={createTask}>
       <span className="section-kicker">Paid task</span>
-      <h2>Hire {agentName}</h2>
+      <h2>Hire {agent.name}</h2>
       <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
       <button className="primary-button" disabled={busy}>{busy ? "Creating task..." : "Pay + Create Task"}</button>
       {status ? <p className="status-line">{status}</p> : null}

@@ -162,14 +162,19 @@ NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai
 NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai
 NEXT_PUBLIC_0G_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
 NEXT_PUBLIC_0G_COMPUTE_MODEL=zai-org/GLM-5-FP8
+NEXT_PUBLIC_0G_DIRECT_PROVIDER=0xd9966e13a6026Fcca4b13E7ff95c94DE268C471C
 SERVER_WALLET_PRIVATE_KEY=0x...
 EXECUTOR_PRIVATE_KEY=0x...
+AGENTFUN_DATA_DIR=.agentfun-data
+AGENTFUN_CREDENTIAL_SECRET=...
 OG_COMPUTE_KEY=...
 OG_DA_GATEWAY_URL=https://your-vps.example/internal/da/submit
 OG_DEMO_MODE=false
 ```
 
 `SERVER_WALLET_PRIVATE_KEY` is used only for sponsored 0G Storage uploads. `EXECUTOR_PRIVATE_KEY` is the wallet authorized with `setExecutor` to complete paid tasks after verifying payment, 0G Compute output, 0G Storage roots, and 0G DA commitment. Do not put either key in `NEXT_PUBLIC_*`.
+
+Creators do not need to paste a 0G Compute key. Each agent page includes creator-funded compute activation: the creator signs 0G Compute ledger/provider funding transactions, the app generates a direct provider token from the creator wallet signature, and the token is encrypted server-side for paid task execution.
 
 Run checks:
 

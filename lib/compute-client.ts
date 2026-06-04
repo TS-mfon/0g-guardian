@@ -6,10 +6,11 @@ export interface AgentRunResult {
   model: string;
 }
 
-export async function generateAgentProfile(input: { idea: string; category: string; model: string; apiKey?: string }) {
+export async function generateAgentProfile(input: { idea: string; category: string; model: string; apiKey?: string; baseUrl?: string }) {
   const prompt = `Create a concise launch profile for an AI agent on 0G. Idea: ${input.idea}. Category: ${input.category}.`;
   const text = await call0GCompute({
     apiKey: input.apiKey,
+    baseUrl: input.baseUrl,
     model: input.model,
     prompt,
     fallback: `A useful ${input.category} agent that turns user prompts into verifiable 0G-powered tasks.`
@@ -17,10 +18,11 @@ export async function generateAgentProfile(input: { idea: string; category: stri
   return { description: text, systemPrompt: `You are an autonomous ${input.category} agent. ${text}` };
 }
 
-export async function runAgentTask(input: { metadata: AgentMetadata; prompt: TaskPrompt; model: string; apiKey?: string }): Promise<AgentRunResult> {
+export async function runAgentTask(input: { metadata: AgentMetadata; prompt: TaskPrompt; model: string; apiKey?: string; baseUrl?: string }): Promise<AgentRunResult> {
   const fallback = buildCapabilityResponse(input.metadata, input.prompt.prompt);
   const response = await call0GCompute({
     apiKey: input.apiKey,
+    baseUrl: input.baseUrl,
     model: input.model,
     prompt: `${input.metadata.systemPrompt}\n\nUser task:\n${input.prompt.prompt}`,
     fallback
@@ -48,8 +50,8 @@ function buildCapabilityResponse(metadata: AgentMetadata, prompt: string) {
   return `${intro}\n\nResponse:\n- Parsed the request into a clear objective.\n- Produced a concise output aligned with the agent profile.\n- Prepared result and memory material for 0G proof recording.`;
 }
 
-async function call0GCompute(input: { apiKey?: string; model: string; prompt: string; fallback: string }) {
-  const baseUrl = process.env.OG_COMPUTE_BASE_URL ?? process.env.NEXT_PUBLIC_0G_COMPUTE_BASE_URL ?? "https://router-api.0g.ai/v1";
+async function call0GCompute(input: { apiKey?: string; baseUrl?: string; model: string; prompt: string; fallback: string }) {
+  const baseUrl = input.baseUrl ?? process.env.OG_COMPUTE_BASE_URL ?? process.env.NEXT_PUBLIC_0G_COMPUTE_BASE_URL ?? "https://router-api.0g.ai/v1";
   const apiKey = input.apiKey ?? process.env.OG_COMPUTE_KEY ?? "";
   const demoMode = process.env.OG_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   if (!apiKey) {
