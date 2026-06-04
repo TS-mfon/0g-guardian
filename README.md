@@ -160,12 +160,21 @@ NEXT_PUBLIC_0G_RPC_URL=https://rpc.ankr.com/0g_mainnet_evm
 NEXT_PUBLIC_0G_EXPLORER=https://chainscan.0g.ai
 NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai
 NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai
+NEXT_PUBLIC_0G_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
+NEXT_PUBLIC_0G_COMPUTE_MODEL=deepseek-v4-flash
 SERVER_WALLET_PRIVATE_KEY=0x...
+EXECUTOR_PRIVATE_KEY=0x...
+OG_COMPUTE_KEY=...
+OG_DA_GATEWAY_URL=https://your-vps.example/internal/da/submit
+OG_DEMO_MODE=false
 ```
+
+`SERVER_WALLET_PRIVATE_KEY` is used only for sponsored 0G Storage uploads. `EXECUTOR_PRIVATE_KEY` is the wallet authorized with `setExecutor` to complete paid tasks after verifying payment, 0G Compute output, 0G Storage roots, and 0G DA commitment. Do not put either key in `NEXT_PUBLIC_*`.
 
 Run checks:
 
 ```bash
+npm run verify
 npm run test:contracts
 npm run typecheck
 npm run build
@@ -189,7 +198,10 @@ http://localhost:3000
 - Network: 0G Mainnet, chain ID `16661`, hex `0x4115`.
 - Public RPC used by the app: `https://rpc.ankr.com/0g_mainnet_evm`.
 - The app asks the wallet to switch/add 0G Mainnet when needed.
+- The wallet panel includes a 0G Mainnet/Galileo selector. Testnet requires testnet contract addresses before write actions work.
 - Launching an agent requires 0G for gas and launch fee.
+- Paid tasks are created by the user wallet, then completed by an approved executor wallet through `/api/tasks/execute`.
+- Production task execution requires `OG_COMPUTE_KEY`, `SERVER_WALLET_PRIVATE_KEY` or `EXECUTOR_PRIVATE_KEY`, and `OG_DA_GATEWAY_URL`. Without those, tasks remain pending instead of showing fake completed proofs.
 - The five seeded agents can be viewed without a wallet on `/agents`.
 - Creating new agents requires a wallet signature.
 
@@ -208,5 +220,4 @@ Slide outline is in [docs/pitch-deck.md](docs/pitch-deck.md).
 ## User Testing Notes
 
 Testing notes are in [docs/user-testing-notes.md](docs/user-testing-notes.md).
-
 

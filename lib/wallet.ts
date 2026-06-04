@@ -1,6 +1,6 @@
 import { BrowserProvider, Contract, ethers } from "ethers";
 import { agentFunCoreAbi, agenticIdAbi } from "@shared/index";
-import { clientConfig } from "./config";
+import { clientConfig, getZeroGNetwork, ZeroGNetworkKey, zeroGNetworks } from "./config";
 
 declare global {
   interface Window {
@@ -55,22 +55,39 @@ export function wantsWalletReconnect() {
   return window.localStorage.getItem("agentfun.walletConnected") === "true";
 }
 
+export function getSelectedNetworkKey(): ZeroGNetworkKey {
+  if (typeof window === "undefined") return "mainnet";
+  const value = window.localStorage.getItem("agentfun.network");
+  return value === "testnet" ? "testnet" : "mainnet";
+}
+
+export function setSelectedNetworkKey(key: ZeroGNetworkKey) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem("agentfun.network", key);
+  window.dispatchEvent(new CustomEvent("agentfun:network", { detail: { key } }));
+}
+
 export async function ensureZeroGNetwork(provider: BrowserProvider) {
+  const selected = getZeroGNetwork(getSelectedNetworkKey());
   const network = await provider.getNetwork();
-  if (Number(network.chainId) === clientConfig.chainId) return;
+  if (Number(network.chainId) === selected.chainId) return;
   try {
-    await provider.send("wallet_switchEthereumChain", [{ chainId: clientConfig.chainIdHex }]);
+    await provider.send("wallet_switchEthereumChain", [{ chainId: selected.chainIdHex }]);
   } catch {
     await provider.send("wallet_addEthereumChain", [
       {
-        chainId: clientConfig.chainIdHex,
-        chainName: "0G Mainnet",
+        chainId: selected.chainIdHex,
+        chainName: selected.label,
         nativeCurrency: { name: "0G", symbol: "0G", decimals: 18 },
-        rpcUrls: [clientConfig.rpcUrl],
-        blockExplorerUrls: [clientConfig.explorerUrl]
+        rpcUrls: [selected.rpcUrl],
+        blockExplorerUrls: [selected.explorerUrl]
       }
     ]);
   }
+}
+
+export function getSelectedNetworkLabel() {
+  return zeroGNetworks[getSelectedNetworkKey()].label;
 }
 
 export async function agentFunCoreContract() {

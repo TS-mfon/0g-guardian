@@ -1,4 +1,19 @@
-import { ZERO_G_MAINNET } from "@shared/index";
+import { ZERO_G_GALILEO, ZERO_G_MAINNET } from "@shared/index";
+
+export const zeroGNetworks = {
+  mainnet: {
+    key: "mainnet",
+    label: "0G Mainnet",
+    ...ZERO_G_MAINNET
+  },
+  testnet: {
+    key: "testnet",
+    label: "0G Galileo",
+    ...ZERO_G_GALILEO
+  }
+} as const;
+
+export type ZeroGNetworkKey = keyof typeof zeroGNetworks;
 
 export const clientConfig = {
   chainId: Number(process.env.NEXT_PUBLIC_0G_CHAIN_ID ?? ZERO_G_MAINNET.chainId),
@@ -16,4 +31,8 @@ export const clientConfig = {
 
 export function isAddressConfigured(address: string) {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+export function getZeroGNetwork(key: ZeroGNetworkKey) {
+  return zeroGNetworks[key];
 }

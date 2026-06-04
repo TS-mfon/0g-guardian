@@ -5,8 +5,10 @@ contract AgentFunCore {
     enum TaskStatus {
         NONE,
         OPEN,
+        RUNNING,
         COMPLETED,
-        CANCELLED
+        CANCELLED,
+        REFUNDED
     }
 
     struct Agent {
@@ -29,6 +31,7 @@ contract AgentFunCore {
         uint256 id;
         uint256 agentId;
         address requester;
+        address executor;
         uint256 fee;
         bytes32 promptRoot;
         bytes32 resultRoot;
@@ -36,6 +39,7 @@ contract AgentFunCore {
         bytes32 daCommitment;
         TaskStatus status;
         uint256 createdAt;
+        uint256 deadline;
         uint256 completedAt;
         uint8 rating;
     }
@@ -48,11 +52,16 @@ contract AgentFunCore {
     uint256 public nextAgentId = 1;
     uint256 public nextTaskId = 1;
     address public owner;
+    bool public launchesPaused;
+    bool public tasksPaused;
+    bool public marketPaused;
+    bool private locked;
 
     mapping(uint256 => Agent) private agents;
     mapping(uint256 => Task) private tasks;
     mapping(uint256 => bool) public agentExists;
     mapping(uint256 => bool) public agentIdTokenUsed;
+    mapping(address => bool) public taskExecutors;
     mapping(uint256 => mapping(address => uint256)) public keyBalance;
     mapping(uint256 => uint256) public keySupply;
     mapping(uint256 => uint256) public agentReserve;
@@ -72,17 +81,29 @@ contract AgentFunCore {
     );
     event AgentMemoryUpdated(uint256 indexed agentId, bytes32 previousRoot, bytes32 newRoot);
     event AgentStatusChanged(uint256 indexed agentId, bool active);
+    event ExecutorUpdated(address indexed executor, bool allowed);
+    event PauseStateChanged(bool launchesPaused, bool tasksPaused, bool marketPaused);
     event KeysBought(uint256 indexed agentId, address indexed buyer, uint256 keysOut, uint256 paid);
     event KeysSold(uint256 indexed agentId, address indexed seller, uint256 keysIn, uint256 received);
-    event TaskCreated(uint256 indexed taskId, uint256 indexed agentId, address indexed requester, uint256 fee, bytes32 promptRoot);
+    event TaskCreated(
+        uint256 indexed taskId,
+        uint256 indexed agentId,
+        address indexed requester,
+        uint256 fee,
+        bytes32 promptRoot,
+        uint256 deadline
+    );
+    event TaskRunning(uint256 indexed taskId, address indexed executor);
     event TaskCompleted(
         uint256 indexed taskId,
         uint256 indexed agentId,
+        address indexed executor,
         bytes32 resultRoot,
         bytes32 computeHash,
         bytes32 daCommitment,
         bytes32 newMemoryRoot
     );
+    event TaskRefunded(uint256 indexed taskId, address indexed requester, uint256 amount);
     event TaskRated(uint256 indexed taskId, uint8 rating);
     event RevenueClaimed(address indexed account, uint256 amount);
 
@@ -96,6 +117,13 @@ contract AgentFunCore {
     error InsufficientKeys();
     error TransferFailed();
     error InvalidTaskStatus();
+    error NotTaskExecutor();
+    error TaskExpired();
+    error TaskNotExpired();
+    error LaunchesPaused();
+    error TasksPaused();
+    error MarketPaused();
+    error Reentrancy();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -108,9 +136,23 @@ contract AgentFunCore {
         _;
     }
 
+    modifier onlyTaskExecutor() {
+        if (!taskExecutors[msg.sender]) revert NotTaskExecutor();
+        _;
+    }
+
+    modifier nonReentrant() {
+        if (locked) revert Reentrancy();
+        locked = true;
+        _;
+        locked = false;
+    }
+
     constructor() {
         owner = msg.sender;
+        taskExecutors[msg.sender] = true;
         emit OwnershipTransferred(address(0), msg.sender);
+        emit ExecutorUpdated(msg.sender, true);
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
@@ -130,6 +172,19 @@ contract AgentFunCore {
         creatorFeeBps = newCreatorFeeBps;
     }
 
+    function setExecutor(address executor, bool allowed) external onlyOwner {
+        if (executor == address(0)) revert InvalidInput();
+        taskExecutors[executor] = allowed;
+        emit ExecutorUpdated(executor, allowed);
+    }
+
+    function setPauseState(bool pauseLaunches, bool pauseTasks, bool pauseMarket) external onlyOwner {
+        launchesPaused = pauseLaunches;
+        tasksPaused = pauseTasks;
+        marketPaused = pauseMarket;
+        emit PauseStateChanged(pauseLaunches, pauseTasks, pauseMarket);
+    }
+
     function launchAgent(
         string calldata name,
         string calldata symbol,
@@ -139,6 +194,7 @@ contract AgentFunCore {
         bytes32 memoryRoot,
         bytes32 capabilityHash
     ) external payable returns (uint256 agentId) {
+        if (launchesPaused) revert LaunchesPaused();
         if (msg.value < launchFee) revert InsufficientPayment();
         if (bytes(name).length == 0 || bytes(name).length > 80) revert InvalidInput();
         if (bytes(symbol).length == 0 || bytes(symbol).length > 16) revert InvalidInput();
@@ -185,6 +241,7 @@ contract AgentFunCore {
     }
 
     function buyKeys(uint256 agentId, uint256 keysOut) external payable returns (uint256 paid) {
+        if (marketPaused) revert MarketPaused();
         if (!agentExists[agentId]) revert AgentNotFound();
         if (keysOut == 0) revert InvalidInput();
         paid = getBuyPrice(agentId, keysOut);
@@ -202,7 +259,8 @@ contract AgentFunCore {
         emit KeysBought(agentId, msg.sender, keysOut, paid);
     }
 
-    function sellKeys(uint256 agentId, uint256 keysIn, uint256 minOut) external returns (uint256 payout) {
+    function sellKeys(uint256 agentId, uint256 keysIn, uint256 minOut) external nonReentrant returns (uint256 payout) {
+        if (marketPaused) revert MarketPaused();
         if (!agentExists[agentId]) revert AgentNotFound();
         if (keysIn == 0) revert InvalidInput();
         if (keyBalance[agentId][msg.sender] < keysIn) revert InsufficientKeys();
@@ -217,14 +275,21 @@ contract AgentFunCore {
     }
 
     function createTask(uint256 agentId, bytes32 promptRoot) external payable returns (uint256 taskId) {
+        taskId = createTaskWithDeadline(agentId, promptRoot, block.timestamp + 1 days);
+    }
+
+    function createTaskWithDeadline(uint256 agentId, bytes32 promptRoot, uint256 deadline) public payable returns (uint256 taskId) {
+        if (tasksPaused) revert TasksPaused();
         if (!agentExists[agentId]) revert AgentNotFound();
         if (!agents[agentId].active || promptRoot == bytes32(0)) revert InvalidInput();
         if (msg.value < minTaskFee) revert InsufficientPayment();
+        if (deadline <= block.timestamp) revert InvalidInput();
         taskId = nextTaskId++;
         tasks[taskId] = Task({
             id: taskId,
             agentId: agentId,
             requester: msg.sender,
+            executor: address(0),
             fee: msg.value,
             promptRoot: promptRoot,
             resultRoot: bytes32(0),
@@ -232,12 +297,23 @@ contract AgentFunCore {
             daCommitment: bytes32(0),
             status: TaskStatus.OPEN,
             createdAt: block.timestamp,
+            deadline: deadline,
             completedAt: 0,
             rating: 0
         });
         allTaskIds.push(taskId);
         agents[agentId].taskCount += 1;
-        emit TaskCreated(taskId, agentId, msg.sender, msg.value, promptRoot);
+        emit TaskCreated(taskId, agentId, msg.sender, msg.value, promptRoot, deadline);
+    }
+
+    function markTaskRunning(uint256 taskId) external onlyTaskExecutor {
+        if (tasks[taskId].id == 0) revert TaskNotFound();
+        Task storage task = tasks[taskId];
+        if (task.status != TaskStatus.OPEN) revert InvalidTaskStatus();
+        if (block.timestamp > task.deadline) revert TaskExpired();
+        task.executor = msg.sender;
+        task.status = TaskStatus.RUNNING;
+        emit TaskRunning(taskId, msg.sender);
     }
 
     function completeTask(
@@ -246,16 +322,17 @@ contract AgentFunCore {
         bytes32 computeHash,
         bytes32 daCommitment,
         bytes32 newMemoryRoot
-    ) external {
+    ) external onlyTaskExecutor {
         if (tasks[taskId].id == 0) revert TaskNotFound();
         Task storage task = tasks[taskId];
-        if (task.status != TaskStatus.OPEN) revert InvalidTaskStatus();
+        if (task.status != TaskStatus.OPEN && task.status != TaskStatus.RUNNING) revert InvalidTaskStatus();
+        if (block.timestamp > task.deadline) revert TaskExpired();
         Agent storage agent = agents[task.agentId];
-        if (msg.sender != agent.creator && msg.sender != task.requester) revert NotAgentCreator();
         if (resultRoot == bytes32(0) || computeHash == bytes32(0) || daCommitment == bytes32(0) || newMemoryRoot == bytes32(0)) {
             revert InvalidInput();
         }
 
+        task.executor = msg.sender;
         task.resultRoot = resultRoot;
         task.computeHash = computeHash;
         task.daCommitment = daCommitment;
@@ -267,7 +344,21 @@ contract AgentFunCore {
         claimable[agent.creator] += task.fee;
 
         emit AgentMemoryUpdated(task.agentId, previousRoot, newMemoryRoot);
-        emit TaskCompleted(taskId, task.agentId, resultRoot, computeHash, daCommitment, newMemoryRoot);
+        emit TaskCompleted(taskId, task.agentId, msg.sender, resultRoot, computeHash, daCommitment, newMemoryRoot);
+    }
+
+    function cancelExpiredTask(uint256 taskId) external nonReentrant returns (uint256 refund) {
+        if (tasks[taskId].id == 0) revert TaskNotFound();
+        Task storage task = tasks[taskId];
+        if (task.status != TaskStatus.OPEN && task.status != TaskStatus.RUNNING) revert InvalidTaskStatus();
+        if (block.timestamp <= task.deadline) revert TaskNotExpired();
+        if (msg.sender != task.requester) revert InvalidTaskStatus();
+        refund = task.fee;
+        task.status = TaskStatus.REFUNDED;
+        task.fee = 0;
+        (bool ok,) = msg.sender.call{value: refund}("");
+        if (!ok) revert TransferFailed();
+        emit TaskRefunded(taskId, msg.sender, refund);
     }
 
     function rateTask(uint256 taskId, uint8 rating) external {
@@ -279,7 +370,7 @@ contract AgentFunCore {
         emit TaskRated(taskId, rating);
     }
 
-    function claimRevenue() external returns (uint256 amount) {
+    function claimRevenue() external nonReentrant returns (uint256 amount) {
         amount = claimable[msg.sender];
         if (amount == 0) revert InvalidInput();
         claimable[msg.sender] = 0;
@@ -290,20 +381,21 @@ contract AgentFunCore {
 
     function getBuyPrice(uint256 agentId, uint256 amount) public view returns (uint256) {
         uint256 supply = keySupply[agentId];
-        uint256 total;
-        for (uint256 i = 1; i <= amount; i += 1) {
-            total += 0.0001 ether + ((supply + i) * 0.00002 ether);
-        }
-        return total;
+        if (amount == 0) return 0;
+        uint256 start = supply + 1;
+        uint256 end = supply + amount;
+        uint256 linearSum = ((start + end) * amount) / 2;
+        return (amount * 0.0001 ether) + (linearSum * 0.00002 ether);
     }
 
     function getSellPrice(uint256 agentId, uint256 amount) public view returns (uint256) {
         uint256 supply = keySupply[agentId];
         if (amount > supply) revert InvalidInput();
-        uint256 total;
-        for (uint256 i = 0; i < amount; i += 1) {
-            total += 0.0001 ether + ((supply - i) * 0.00002 ether);
-        }
+        if (amount == 0) return 0;
+        uint256 start = supply - amount + 1;
+        uint256 end = supply;
+        uint256 linearSum = ((start + end) * amount) / 2;
+        uint256 total = (amount * 0.0001 ether) + (linearSum * 0.00002 ether);
         return (total * 9_000) / BPS;
     }
 

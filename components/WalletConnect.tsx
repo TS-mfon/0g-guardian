@@ -3,13 +3,23 @@
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { getUserMessage } from "@/lib/errors";
-import { connectWallet, forgetWallet, getConnectedWallet, wantsWalletReconnect } from "@/lib/wallet";
+import {
+  connectWallet,
+  forgetWallet,
+  getConnectedWallet,
+  getSelectedNetworkKey,
+  getSelectedNetworkLabel,
+  setSelectedNetworkKey,
+  wantsWalletReconnect
+} from "@/lib/wallet";
+import { ZeroGNetworkKey } from "@/lib/config";
 
 export function WalletConnect({ compact = false }: { compact?: boolean }) {
   const [address, setAddress] = useState("");
   const [balance, setBalance] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [network, setNetwork] = useState<ZeroGNetworkKey>("mainnet");
 
   async function hydrateWallet(silent = true) {
     try {
@@ -20,15 +30,20 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
       }
       setAddress(snapshot.address);
       setBalance(Number(snapshot.balance).toLocaleString(undefined, { maximumFractionDigits: 4 }));
-      if (!silent) setStatus("Ready to pay 0G network and storage fees.");
+      if (!silent) setStatus(`Ready on ${getSelectedNetworkLabel()}.`);
     } catch (error) {
       if (!silent) setStatus(getUserMessage(error, "Wallet connection failed. Please retry."));
     }
   }
 
   useEffect(() => {
+    setNetwork(getSelectedNetworkKey());
     if (wantsWalletReconnect()) void hydrateWallet(true);
     const onWallet = () => void hydrateWallet(true);
+    const onNetwork = () => {
+      setNetwork(getSelectedNetworkKey());
+      if (wantsWalletReconnect()) void hydrateWallet(true);
+    };
     const onAccounts = (accounts: unknown) => {
       const next = Array.isArray(accounts) && accounts[0] ? String(accounts[0]) : "";
       if (!next) {
@@ -41,6 +56,7 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
       void hydrateWallet(true);
     };
     window.addEventListener("agentfun:wallet", onWallet);
+    window.addEventListener("agentfun:network", onNetwork);
     const ethereum = window.ethereum as (typeof window.ethereum & {
       on?: (event: string, handler: (...args: any[]) => void) => void;
       removeListener?: (event: string, handler: (...args: any[]) => void) => void;
@@ -49,6 +65,7 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
     ethereum?.on?.("chainChanged", onWallet);
     return () => {
       window.removeEventListener("agentfun:wallet", onWallet);
+      window.removeEventListener("agentfun:network", onNetwork);
       ethereum?.removeListener?.("accountsChanged", onAccounts);
       ethereum?.removeListener?.("chainChanged", onWallet);
     };
@@ -62,12 +79,20 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
       const rawBalance = await provider.getBalance(connectedAddress);
       setAddress(connectedAddress);
       setBalance(Number(ethers.formatEther(rawBalance)).toLocaleString(undefined, { maximumFractionDigits: 4 }));
-      setStatus("Ready to pay 0G network and storage fees.");
+      setStatus(`Ready on ${getSelectedNetworkLabel()}.`);
     } catch (error) {
       setStatus(getUserMessage(error, "Wallet connection failed. Please retry."));
     } finally {
       setBusy(false);
     }
+  }
+
+  async function changeNetwork(value: ZeroGNetworkKey) {
+    setSelectedNetworkKey(value);
+    setNetwork(value);
+    setStatus("Switching 0G network...");
+    if (address || wantsWalletReconnect()) await connect();
+    else setStatus(`Network set to ${value === "mainnet" ? "0G Mainnet" : "0G Galileo"}.`);
   }
 
   if (compact) {
@@ -89,6 +114,13 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
         </p>
       </div>
       <div className="wallet-actions">
+        <label className="network-select">
+          Network
+          <select value={network} onChange={(event) => void changeNetwork(event.target.value as ZeroGNetworkKey)}>
+            <option value="mainnet">0G Mainnet</option>
+            <option value="testnet">0G Galileo</option>
+          </select>
+        </label>
         <button className="primary-button" type="button" onClick={connect} disabled={busy}>
           {busy ? "Connecting..." : address ? "Reconnect wallet" : "Connect wallet"}
         </button>

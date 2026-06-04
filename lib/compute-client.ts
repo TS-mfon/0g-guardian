@@ -51,7 +51,11 @@ function buildCapabilityResponse(metadata: AgentMetadata, prompt: string) {
 async function call0GCompute(input: { apiKey?: string; model: string; prompt: string; fallback: string }) {
   const baseUrl = process.env.OG_COMPUTE_BASE_URL ?? process.env.NEXT_PUBLIC_0G_COMPUTE_BASE_URL ?? "https://router-api.0g.ai/v1";
   const apiKey = input.apiKey ?? process.env.OG_COMPUTE_KEY ?? "";
-  if (!apiKey) return input.fallback;
+  const demoMode = process.env.OG_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  if (!apiKey) {
+    if (demoMode) return input.fallback;
+    throw new Error("0G Compute is not configured. Set OG_COMPUTE_KEY for production task execution.");
+  }
 
   const response = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",

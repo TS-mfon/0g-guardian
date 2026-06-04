@@ -9,18 +9,35 @@ export const ZERO_G_MAINNET = {
   storageScanUrl: "https://storagescan.0g.ai"
 } as const;
 
+export const ZERO_G_GALILEO = {
+  chainId: 16602,
+  chainIdHex: "0x40e2",
+  rpcUrl: "https://evmrpc-testnet.0g.ai",
+  storageIndexer: "https://indexer-storage-testnet-turbo.0g.ai",
+  explorerUrl: "https://chainscan-galileo.0g.ai",
+  storageScanUrl: "https://storagescan-galileo.0g.ai"
+} as const;
+
 export const agentFunCoreAbi = [
   "function launchFee() view returns (uint256)",
   "function minTaskFee() view returns (uint256)",
+  "function launchesPaused() view returns (bool)",
+  "function tasksPaused() view returns (bool)",
+  "function marketPaused() view returns (bool)",
   "function nextAgentId() view returns (uint256)",
   "function nextTaskId() view returns (uint256)",
+  "function setExecutor(address executor,bool allowed)",
+  "function setPauseState(bool pauseLaunches,bool pauseTasks,bool pauseMarket)",
   "function launchAgent(string name,string symbol,string category,uint256 agentIdTokenId,bytes32 metadataRoot,bytes32 memoryRoot,bytes32 capabilityHash) payable returns (uint256)",
   "function updateMemoryRoot(uint256 agentId,bytes32 newMemoryRoot)",
   "function setAgentActive(uint256 agentId,bool active)",
   "function buyKeys(uint256 agentId,uint256 keysOut) payable returns (uint256)",
   "function sellKeys(uint256 agentId,uint256 keysIn,uint256 minOut) returns (uint256)",
   "function createTask(uint256 agentId,bytes32 promptRoot) payable returns (uint256)",
+  "function createTaskWithDeadline(uint256 agentId,bytes32 promptRoot,uint256 deadline) payable returns (uint256)",
+  "function markTaskRunning(uint256 taskId)",
   "function completeTask(uint256 taskId,bytes32 resultRoot,bytes32 computeHash,bytes32 daCommitment,bytes32 newMemoryRoot)",
+  "function cancelExpiredTask(uint256 taskId) returns (uint256)",
   "function rateTask(uint256 taskId,uint8 rating)",
   "function claimRevenue() returns (uint256)",
   "function getBuyPrice(uint256 agentId,uint256 amount) view returns (uint256)",
@@ -30,16 +47,20 @@ export const agentFunCoreAbi = [
   "function agentReserve(uint256 agentId) view returns (uint256)",
   "function claimable(address account) view returns (uint256)",
   "function getAgent(uint256 agentId) view returns ((uint256 id,address creator,uint256 agentIdTokenId,string name,string symbol,string category,bytes32 metadataRoot,bytes32 memoryRoot,bytes32 capabilityHash,uint256 createdAt,bool active,uint256 taskCount,uint256 totalRevenue))",
-  "function getTask(uint256 taskId) view returns ((uint256 id,uint256 agentId,address requester,uint256 fee,bytes32 promptRoot,bytes32 resultRoot,bytes32 computeHash,bytes32 daCommitment,uint8 status,uint256 createdAt,uint256 completedAt,uint8 rating))",
+  "function getTask(uint256 taskId) view returns ((uint256 id,uint256 agentId,address requester,address executor,uint256 fee,bytes32 promptRoot,bytes32 resultRoot,bytes32 computeHash,bytes32 daCommitment,uint8 status,uint256 createdAt,uint256 deadline,uint256 completedAt,uint8 rating))",
   "function getAllAgentIds() view returns (uint256[])",
   "function getAllTaskIds() view returns (uint256[])",
   "event AgentLaunched(uint256 indexed agentId,address indexed creator,uint256 indexed agentIdTokenId,string name,string symbol,bytes32 metadataRoot,bytes32 memoryRoot)",
   "event AgentMemoryUpdated(uint256 indexed agentId,bytes32 previousRoot,bytes32 newRoot)",
   "event AgentStatusChanged(uint256 indexed agentId,bool active)",
+  "event ExecutorUpdated(address indexed executor,bool allowed)",
+  "event PauseStateChanged(bool launchesPaused,bool tasksPaused,bool marketPaused)",
   "event KeysBought(uint256 indexed agentId,address indexed buyer,uint256 keysOut,uint256 paid)",
   "event KeysSold(uint256 indexed agentId,address indexed seller,uint256 keysIn,uint256 received)",
-  "event TaskCreated(uint256 indexed taskId,uint256 indexed agentId,address indexed requester,uint256 fee,bytes32 promptRoot)",
-  "event TaskCompleted(uint256 indexed taskId,uint256 indexed agentId,bytes32 resultRoot,bytes32 computeHash,bytes32 daCommitment,bytes32 newMemoryRoot)",
+  "event TaskCreated(uint256 indexed taskId,uint256 indexed agentId,address indexed requester,uint256 fee,bytes32 promptRoot,uint256 deadline)",
+  "event TaskRunning(uint256 indexed taskId,address indexed executor)",
+  "event TaskCompleted(uint256 indexed taskId,uint256 indexed agentId,address indexed executor,bytes32 resultRoot,bytes32 computeHash,bytes32 daCommitment,bytes32 newMemoryRoot)",
+  "event TaskRefunded(uint256 indexed taskId,address indexed requester,uint256 amount)",
   "event TaskRated(uint256 indexed taskId,uint8 rating)",
   "event RevenueClaimed(address indexed account,uint256 amount)"
 ] as const;
