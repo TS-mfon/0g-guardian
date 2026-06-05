@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { clientConfig } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
-import { connectWallet } from "@/lib/wallet";
+import { connectWallet, getCurrentWalletAddressSilently } from "@/lib/wallet";
 
 function linkMessage(input: { agentId: string; creator: string }) {
   return [
@@ -20,6 +20,7 @@ export function CreatorComputeKeyPanel({ agentId, creator }: { agentId: string; 
   const [status, setStatus] = useState("Checking creator compute setup...");
   const [configured, setConfigured] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
 
   async function refreshStatus() {
     const response = await fetch(`/api/agents/compute-key?agentId=${encodeURIComponent(agentId)}`);
@@ -34,7 +35,16 @@ export function CreatorComputeKeyPanel({ agentId, creator }: { agentId: string; 
   }
 
   useEffect(() => {
-    void refreshStatus().catch(() => setStatus("Compute status is unavailable."));
+    async function hydrateRole() {
+      const address = await getCurrentWalletAddressSilently();
+      const creatorWallet = Boolean(address) && address.toLowerCase() === creator.toLowerCase();
+      setIsCreator(creatorWallet);
+      if (creatorWallet) await refreshStatus();
+    }
+    void hydrateRole().catch(() => setIsCreator(false));
+    const onWallet = () => void hydrateRole().catch(() => setIsCreator(false));
+    window.addEventListener("agentfun:wallet", onWallet);
+    return () => window.removeEventListener("agentfun:wallet", onWallet);
   }, []);
 
   async function saveKey(event: FormEvent) {
@@ -105,12 +115,14 @@ export function CreatorComputeKeyPanel({ agentId, creator }: { agentId: string; 
     }
   }
 
+  if (!isCreator) return null;
+
   return (
-    <form className="glass-card compute-key-panel" onSubmit={saveKey}>
-      <span className="section-kicker">Creator compute</span>
-      <h2>{configured ? "0G Compute is linked" : "Link creator-paid 0G Compute"}</h2>
+    <form className="glass-card compute-key-panel creator-console-panel" onSubmit={saveKey}>
+      <span className="section-kicker">Creator console</span>
+      <h2>{configured ? "Task execution is active" : "Activate task execution"}</h2>
       <p>
-        Paid tasks use compute funded from the creator wallet. The app handles provider setup and stores the generated token encrypted server-side.
+        Your creator wallet funds the 0G Compute account used by this agent. Users only see whether the agent is ready for paid tasks.
       </p>
       <div className="compute-route">
         <span>Provider</span>

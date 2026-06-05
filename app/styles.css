@@ -1774,3 +1774,164 @@ pre {
     grid-template-columns: 1fr;
   }
 }
+
+/* Final production UI pass: keep Cyber-Silk consistent and prevent accidental light panels. */
+body {
+  background:
+    linear-gradient(180deg, rgba(99, 102, 241, 0.14), transparent 32%),
+    radial-gradient(circle at 84% 10%, rgba(34, 211, 238, 0.12), transparent 30%),
+    linear-gradient(135deg, #0b0b10 0%, #131318 58%, #181225 100%) !important;
+  color: #f8fafc !important;
+}
+
+.landing-clean {
+  min-height: auto;
+  padding-top: 76px;
+  padding-bottom: 58px;
+}
+
+.landing-clean .hero-copy h1 {
+  max-width: 840px;
+}
+
+.product-flow-band {
+  margin: 28px auto 32px;
+  gap: 20px;
+}
+
+.landing-proof-stack,
+.landing-final-cta {
+  max-width: 1180px;
+  margin: 0 auto 34px;
+}
+
+.landing-proof-stack {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.landing-proof-stack div,
+.landing-final-cta,
+.network-readiness-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
+    rgba(27, 27, 32, 0.86);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px);
+}
+
+.landing-proof-stack div {
+  display: grid;
+  gap: 9px;
+  padding: 20px;
+}
+
+.landing-proof-stack span,
+.network-readiness-card span {
+  color: #22d3ee;
+  font-size: 12px;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.landing-proof-stack strong,
+.network-readiness-card strong {
+  color: #ffffff;
+  line-height: 1.35;
+}
+
+.landing-final-cta {
+  display: grid;
+  gap: 12px;
+  padding: 34px;
+}
+
+.landing-final-cta h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(32px, 5vw, 58px);
+  letter-spacing: -0.02em;
+}
+
+.landing-final-cta p,
+.network-readiness-card p {
+  margin: 0;
+  color: #a7a7b4;
+  line-height: 1.65;
+}
+
+.network-readiness-card {
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+}
+
+.creator-console-panel {
+  max-width: 1180px;
+  margin: 0 auto 34px;
+}
+
+.command-card-v2,
+.product-flow-band article,
+.secondary-button,
+.terminal-visual,
+.launch-terminal,
+.receipt-card,
+.metric-grid div,
+.wallet-readout,
+.launch-step,
+.agent-tile:hover,
+.wallet-card,
+.proof-link,
+.wallet-pill {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
+    rgba(27, 27, 32, 0.86) !important;
+  color: #f8fafc !important;
+}
+
+.primary-command {
+  background: linear-gradient(135deg, #6366f1, #a855f7) !important;
+}
+
+.product-flow-band h2,
+.command-card-v2 strong,
+.agent-tile h3,
+.metric-grid strong,
+.wallet-readout strong,
+.launch-step strong,
+.proof-grid strong,
+.portfolio-grid strong {
+  color: #ffffff !important;
+}
+
+.product-flow-band p,
+.command-card-v2 p,
+.agent-tile p,
+.launch-step p,
+.wallet-readout span,
+.wallet-status,
+.status-line {
+  color: #a7a7b4 !important;
+}
+
+@media (max-width: 920px) {
+  .landing-clean {
+    padding-top: 38px;
+    padding-bottom: 34px;
+  }
+
+  .landing-proof-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .landing-proof-stack {
+    grid-template-columns: 1fr;
+  }
+}

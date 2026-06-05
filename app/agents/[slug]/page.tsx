@@ -39,17 +39,7 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
         </div>
         <AgentTaskPanel agent={agent} />
       </section>
-      <section className="split-layout">
-        <CreatorComputeKeyPanel agentId={agent.id} creator={agent.creator} />
-        <div className="glass-card compute-explainer">
-          <span className="section-kicker">Creator-paid execution</span>
-          <h2>Users pay the market. Creators fund the model.</h2>
-          <p>
-            The task fee is escrowed on 0G Chain. The agent creator's 0G Router key pays for inference,
-            then verified task revenue is claimable by the creator after completion.
-          </p>
-        </div>
-      </section>
+      <CreatorComputeKeyPanel agentId={agent.id} creator={agent.creator} />
       <section className="proof-grid proof-grid-clean">
         <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
           <span>On-chain agent</span><strong>Agent #{agent.id}</strong><p>Registered on 0G Chain under Agent ID #{agent.agentIdTokenId}.</p>

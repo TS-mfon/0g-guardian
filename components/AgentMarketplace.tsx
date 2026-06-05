@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AgentView, loadAgentsFromChain } from "@/lib/agentfun";
 import { genesisTemplates } from "@/lib/agent-templates";
-import { clientConfig, zeroGNetworks } from "@/lib/config";
+import { zeroGNetworks } from "@/lib/config";
 
 export async function AgentMarketplace({ mode = "marketplace" }: { mode?: "marketplace" | "arena" }) {
   const agents = await loadAgentsFromChain();
@@ -46,7 +46,7 @@ function LiveAgentTile({ agent }: { agent: AgentView }) {
 }
 
 function GenesisLaunchTemplates() {
-  const chainLabel = clientConfig.chainId === zeroGNetworks.testnet.chainId ? zeroGNetworks.testnet.label : zeroGNetworks.mainnet.label;
+  const chainLabel = zeroGNetworks.mainnet.label;
   return (
     <>
       {genesisTemplates.map((agent) => (

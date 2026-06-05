@@ -1,6 +1,6 @@
 import { BrowserProvider, Contract, ethers } from "ethers";
 import { agentFunCoreAbi, agenticIdAbi } from "@shared/index";
-import { clientConfig, getZeroGNetwork, ZeroGNetworkKey, zeroGNetworks } from "./config";
+import { getZeroGNetwork, isAddressConfigured, ZeroGNetworkKey, zeroGNetworks } from "./config";
 
 declare global {
   interface Window {
@@ -34,6 +34,12 @@ export async function getConnectedWallet() {
   const rawBalance = await provider.getBalance(address);
   rememberWallet(address);
   return { provider, address, balance: ethers.formatEther(rawBalance) };
+}
+
+export async function getCurrentWalletAddressSilently() {
+  const provider = await getBrowserProvider();
+  const accounts = await provider.send("eth_accounts", []);
+  return Array.isArray(accounts) && accounts[0] ? String(accounts[0]) : "";
 }
 
 export function rememberWallet(address: string) {
@@ -90,12 +96,34 @@ export function getSelectedNetworkLabel() {
   return zeroGNetworks[getSelectedNetworkKey()].label;
 }
 
-export async function agentFunCoreContract() {
-  const { signer } = await connectWallet();
-  return new Contract(clientConfig.agentFunCoreAddress, agentFunCoreAbi, signer);
+export async function verifySelectedNetworkContracts(provider: BrowserProvider) {
+  const selectedKey = getSelectedNetworkKey();
+  const selected = getZeroGNetwork(selectedKey);
+  const network = await provider.getNetwork();
+  if (Number(network.chainId) !== selected.chainId) {
+    throw new Error(`Switch to ${selected.label} before launching.`);
+  }
+  if (!isAddressConfigured(selected.agentFunCoreAddress) || !isAddressConfigured(selected.agentIdContractAddress)) {
+    throw new Error(`${selected.label} launches are not configured yet.`);
+  }
+  const [coreCode, agentIdCode] = await Promise.all([
+    provider.getCode(selected.agentFunCoreAddress),
+    provider.getCode(selected.agentIdContractAddress)
+  ]);
+  if (coreCode === "0x" || agentIdCode === "0x") {
+    throw new Error(`${selected.label} launch contracts are not deployed yet.`);
+  }
+  return selected;
 }
 
-export async function agentIdContract() {
+export async function agentFunCoreContract(networkKey = getSelectedNetworkKey()) {
   const { signer } = await connectWallet();
-  return new Contract(clientConfig.agentIdContractAddress, agenticIdAbi, signer);
+  const selected = getZeroGNetwork(networkKey);
+  return new Contract(selected.agentFunCoreAddress, agentFunCoreAbi, signer);
+}
+
+export async function agentIdContract(networkKey = getSelectedNetworkKey()) {
+  const { signer } = await connectWallet();
+  const selected = getZeroGNetwork(networkKey);
+  return new Contract(selected.agentIdContractAddress, agenticIdAbi, signer);
 }

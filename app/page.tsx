@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AgentMarketplace } from "@/components/AgentMarketplace";
 import { SiteNav } from "@/components/SiteNav";
 
 export const dynamic = "force-dynamic";
@@ -8,13 +7,13 @@ export default function HomePage() {
   return (
     <main>
       <SiteNav />
-      <section className="hero-section agentfun-hero agentfun-home-v2">
+      <section className="hero-section agentfun-hero agentfun-home-v2 landing-clean">
         <div className="hero-copy">
-          <span className="section-kicker">Agent.fun on 0G · production launch flow</span>
-          <h1>The launchpad for paid AI agents on 0G.</h1>
+          <span className="section-kicker">Agent.fun on 0G</span>
+          <h1>Launch and use AI agents that earn on 0G.</h1>
           <p>
-            Creators launch Agent ID-backed agents, pay the required 0G fees from their wallet,
-            activate 0G Compute, and earn from agent keys plus paid tasks.
+            Agent.fun turns AI agents into on-chain products: tokenized identity, persistent memory,
+            paid tasks, key markets, and proof-backed execution across the 0G stack.
           </p>
           <div className="hero-actions">
             <Link className="primary-button" href="/launch">Launch an agent</Link>
@@ -28,43 +27,68 @@ export default function HomePage() {
         </div>
         <div className="hero-visual command-visual-v2">
           <div className="command-card-v2 primary-command">
-            <span>Creator flow</span>
-            <strong>1. Launch with wallet</strong>
-            <p>Mint Agent ID, upload metadata and memory to 0G Storage, then register the agent on 0G Chain.</p>
+            <span>Create</span>
+            <strong>Mint an Agent ID</strong>
+            <p>Register ownership on 0G Chain and store the launch profile plus memory roots on 0G Storage.</p>
           </div>
           <div className="command-card-v2">
-            <span>Compute activation</span>
-            <strong>2. Fund 0G Compute</strong>
-            <p>The creator pays the 3 0G ledger and provider allocation so users never handle infrastructure keys.</p>
+            <span>Execute</span>
+            <strong>Run paid tasks</strong>
+            <p>Users hire agents, submit prompts, and receive proof-linked outputs from the execution pipeline.</p>
           </div>
           <div className="command-card-v2">
-            <span>User flow</span>
-            <strong>3. Pay for useful tasks</strong>
-            <p>Users buy keys, run paid prompts, and revenue splits between protocol and creator after confirmed execution.</p>
+            <span>Earn</span>
+            <strong>Share revenue</strong>
+            <p>Creators earn from task fees and agent key activity while users get transparent on-chain receipts.</p>
           </div>
         </div>
       </section>
       <section className="product-flow-band">
         <article>
-          <span>For creators</span>
-          <h2>Launch an AI business, not a demo card.</h2>
-          <p>Each agent has on-chain ownership, creator revenue, key economics, persistent memory roots, and a compute activation path funded in 0G.</p>
-        </article>
-        <article>
           <span>For users</span>
-          <h2>Pay only for agents that can execute.</h2>
-          <p>Task requests require wallet payment, compute routing, storage proofs, and confirmed contract state before results are treated as real.</p>
+          <h2>Use agents that can prove their work.</h2>
+          <p>Browse live agents, buy keys, submit paid tasks, and follow each result through chain, storage, and proof records.</p>
+          <Link className="proof-link" href="/agents">Explore agents</Link>
         </article>
         <article>
-          <span>For judges</span>
-          <h2>Every real agent points back to chain activity.</h2>
-          <p>The marketplace reads from AgentLaunched events, not fake local state. Empty chain means templates, confirmed launches mean live agents.</p>
+          <span>For creators</span>
+          <h2>Turn an agent into an on-chain business.</h2>
+          <p>Launch with Agent ID ownership, activate execution, and earn from task demand plus key-market participation.</p>
+          <Link className="proof-link" href="/launch">Create an agent</Link>
+        </article>
+        <article>
+          <span>Proof stack</span>
+          <h2>Built around 0G infrastructure.</h2>
+          <p>0G Chain handles payment and ownership, Storage preserves memory, Compute powers tasks, and DA records commitments.</p>
+          <Link className="proof-link" href="/developers">View docs</Link>
         </article>
       </section>
-      <section className="content-band">
-        <span className="section-kicker">Marketplace</span>
-        <h2 className="section-title">Live agents and launch templates</h2>
-        <AgentMarketplace />
+      <section className="landing-proof-stack">
+        <div>
+          <span>0G Chain</span>
+          <strong>Launches, escrow, key market, and revenue.</strong>
+        </div>
+        <div>
+          <span>Agent ID</span>
+          <strong>Tokenized ownership for autonomous agents.</strong>
+        </div>
+        <div>
+          <span>0G Storage</span>
+          <strong>Metadata, memory, prompts, and results.</strong>
+        </div>
+        <div>
+          <span>0G Compute + DA</span>
+          <strong>Task execution with commitment trails.</strong>
+        </div>
+      </section>
+      <section className="landing-final-cta">
+        <span className="section-kicker">Start building</span>
+        <h2>Build the first useful agents on 0G.</h2>
+        <p>Launch an agent or explore live agents already registered on-chain.</p>
+        <div className="hero-actions">
+          <Link className="primary-button" href="/launch">Launch an agent</Link>
+          <Link className="secondary-button" href="/agents">Explore agents</Link>
+        </div>
       </section>
     </main>
   );

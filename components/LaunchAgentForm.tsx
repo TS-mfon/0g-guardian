@@ -1,14 +1,20 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import { AgentCategory, agentMetadataSchema, agentMemorySchema } from "@shared/index";
 import { genesisTemplates } from "@/lib/agent-templates";
-import { clientConfig } from "@/lib/config";
+import { clientConfig, getZeroGNetwork, ZeroGNetworkKey } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { hashJson, shortHash } from "@/lib/hash";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
-import { agentFunCoreContract, agentIdContract, connectWallet } from "@/lib/wallet";
+import {
+  agentFunCoreContract,
+  agentIdContract,
+  connectWallet,
+  getSelectedNetworkKey,
+  verifySelectedNetworkContracts
+} from "@/lib/wallet";
 
 function bytes32(value: string) {
   return ethers.zeroPadValue(value as `0x${string}`, 32);
@@ -27,6 +33,15 @@ export function LaunchAgentForm() {
   const [txHash, setTxHash] = useState("");
   const [verifiedProof, setVerifiedProof] = useState({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
   const [busy, setBusy] = useState(false);
+  const [networkKey, setNetworkKey] = useState<ZeroGNetworkKey>("mainnet");
+  const network = getZeroGNetwork(networkKey);
+
+  useEffect(() => {
+    setNetworkKey(getSelectedNetworkKey());
+    const onNetwork = () => setNetworkKey(getSelectedNetworkKey());
+    window.addEventListener("agentfun:network", onNetwork);
+    return () => window.removeEventListener("agentfun:network", onNetwork);
+  }, []);
 
   function loadTemplate(value: string) {
     const next = genesisTemplates.find((item) => item.name === value) ?? genesisTemplates[0];
@@ -45,10 +60,10 @@ export function LaunchAgentForm() {
     setTxHash("");
     setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
     try {
-      if (!clientConfig.agentFunCoreAddress) throw new Error("NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS is not configured.");
-      if (!clientConfig.agentIdContractAddress) throw new Error("Agent ID contract is not configured.");
-      const { signer, address } = await connectWallet();
-      const idContract = await agentIdContract();
+      const { provider, signer, address } = await connectWallet();
+      const selectedNetwork = await verifySelectedNetworkContracts(provider);
+      setNetworkKey(selectedNetwork.key);
+      const idContract = await agentIdContract(selectedNetwork.key);
       const nextTokenId = await idContract.nextTokenId();
       const nextTokenIdText = nextTokenId.toString();
       const now = new Date().toISOString();
@@ -79,8 +94,8 @@ export function LaunchAgentForm() {
       });
 
       setStatus("Uploading metadata and memory to 0G Storage...");
-      const metadataUpload = await uploadJsonTo0GFromBrowser(metadata, signer);
-      const memoryUpload = await uploadJsonTo0GFromBrowser(memory, signer);
+      const metadataUpload = await uploadJsonTo0GFromBrowser(metadata, signer, selectedNetwork.key);
+      const memoryUpload = await uploadJsonTo0GFromBrowser(memory, signer, selectedNetwork.key);
       const metadataRoot = metadataUpload.rootHash;
       const memoryRoot = memoryUpload.rootHash;
       const capabilityHash = hashJson({ category, systemPrompt, model: clientConfig.computeModel });
@@ -92,7 +107,7 @@ export function LaunchAgentForm() {
       setAgentIdTokenId(nextTokenIdText);
 
       setStatus("Signing launchAgent transaction on 0G Chain...");
-      const contract = await agentFunCoreContract();
+      const contract = await agentFunCoreContract(selectedNetwork.key);
       const launchFee = await contract.launchFee();
       const tx = await contract.launchAgent(
         name,
@@ -120,6 +135,13 @@ export function LaunchAgentForm() {
   return (
     <section className="launch-grid">
       <form className="glass-card launch-form" onSubmit={launch}>
+        <div className="network-readiness-card">
+          <span className="status-badge pending">{network.label}</span>
+          <strong>{network.agentFunCoreAddress && network.agentIdContractAddress ? "Launch preflight enabled" : "Contracts not configured"}</strong>
+          <p>
+            Launches use the selected 0G network, verify live contracts, upload metadata to 0G Storage, then register the agent on-chain.
+          </p>
+        </div>
         <label>
           Start from a Genesis template
           <select value={templateName} onChange={(event) => loadTemplate(event.target.value)}>
