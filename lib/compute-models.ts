@@ -50,12 +50,20 @@ export const computeModelsByCategory: Record<AgentCategory, ComputeModelOption[]
 
 export const agentCategories = Object.keys(computeModelsByCategory) as AgentCategory[];
 
+export const computeModelMatrix = agentCategories.flatMap((category) =>
+  computeModelsByCategory[category].map((model) => ({ category, model }))
+);
+
 export function getDefaultComputeModel(category: AgentCategory) {
   return computeModelsByCategory[category][0];
 }
 
 export function findComputeModel(category: AgentCategory, modelId: string) {
   return computeModelsByCategory[category].find((model) => model.id === modelId) ?? getDefaultComputeModel(category);
+}
+
+export function isModelAllowedForCategory(category: AgentCategory, modelId: string) {
+  return computeModelsByCategory[category].some((model) => model.id === modelId);
 }
 
 export function getActivationQuote(model: ComputeModelOption) {

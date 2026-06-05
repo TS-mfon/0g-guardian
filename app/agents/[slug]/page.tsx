@@ -36,7 +36,7 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
             <div><span>Key price</span><strong>{agent.currentKeyPrice} 0G</strong></div>
             <div><span>Market cap</span><strong>{agent.marketCap} 0G</strong></div>
             <div><span>Tasks</span><strong>{agent.taskCount}</strong></div>
-            <div><span>Revenue</span><strong>{agent.totalRevenue} 0G</strong></div>
+            <div><span>Readiness</span><strong>{agent.readinessScore}%</strong></div>
           </div>
           <AgentActions agent={agent} />
         </div>

@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 import { AgentCategory, agentMetadataSchema, agentMemorySchema } from "@shared/index";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { genesisTemplates } from "@/lib/agent-templates";
-import { agentCategories, computeModelsByCategory, findComputeModel, getActivationQuote, getDefaultComputeModel } from "@/lib/compute-models";
+import { agentCategories, computeModelMatrix, computeModelsByCategory, findComputeModel, getActivationQuote, getDefaultComputeModel, isModelAllowedForCategory } from "@/lib/compute-models";
 import { getZeroGNetwork, ZeroGNetworkKey } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { hashJson, shortHash } from "@/lib/hash";
@@ -77,6 +77,9 @@ export function LaunchAgentForm() {
       const { provider, signer, address } = await connectWallet();
       const selectedNetwork = await verifySelectedNetworkContracts(provider);
       setNetworkKey(selectedNetwork.key);
+      if (!isModelAllowedForCategory(category, selectedModelId)) {
+        throw new Error("Choose a 0G Compute model that supports this agent task type.");
+      }
       const idContract = await agentIdContract(selectedNetwork.key);
       const nextTokenId = await idContract.nextTokenId();
       const nextTokenIdText = nextTokenId.toString();
@@ -178,11 +181,37 @@ export function LaunchAgentForm() {
           <label>Identity mode<input value="Mint new Agent ID during launch" readOnly /></label>
         </div>
         <label>
-          0G Compute model
+          0G Compute model for this task type
           <select value={selectedModelId} onChange={(event) => setSelectedModelId(event.target.value)}>
             {computeModelsByCategory[category].map((model) => <option value={model.id} key={model.id}>{model.label} · {model.tier}</option>)}
           </select>
         </label>
+        <div className="model-matrix-panel">
+          <div className="section-heading-row">
+            <div>
+              <span className="section-kicker">Model map</span>
+              <h3>Pick a task type to reveal compatible 0G models</h3>
+            </div>
+          </div>
+          <div className="model-matrix-grid">
+            {computeModelMatrix.map(({ category: itemCategory, model }) => (
+              <button
+                type="button"
+                className={itemCategory === category && model.id === selectedModel.id ? "model-option-card active" : "model-option-card"}
+                key={`${itemCategory}-${model.id}`}
+                onClick={() => {
+                  changeCategory(itemCategory);
+                  setSelectedModelId(model.id);
+                }}
+              >
+                <span>{itemCategory}</span>
+                <strong>{model.label}</strong>
+                <p>{model.reason}</p>
+                <em>{model.tier}{model.teeRequired ? " · TEE" : ""} · {model.modality}</em>
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="network-readiness-card compute-model-card">
           <span className={selectedModel.teeRequired ? "status-badge success" : "status-badge pending"}>{selectedModel.modality}</span>
           <strong>{selectedModel.label}</strong>

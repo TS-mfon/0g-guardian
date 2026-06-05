@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { getCreatorComputeStatus, saveCreatorComputeKey } from "@/lib/creator-compute-store";
+import { getCreatorComputeStatusForNetwork, saveCreatorComputeKey } from "@/lib/creator-compute-store";
 import { readAgentFunContract } from "@/lib/agentfun";
 import { clientConfig } from "@/lib/config";
 
@@ -24,10 +24,11 @@ async function loadAgentCreator(agentId: string) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const agentId = searchParams.get("agentId") ?? "";
+  const network = searchParams.get("network") ?? "mainnet";
   if (!agentId) {
     return NextResponse.json({ error: { code: "AGENT_REQUIRED", message: "Agent ID is required." } }, { status: 400 });
   }
-  return NextResponse.json(await getCreatorComputeStatus(agentId));
+  return NextResponse.json(await getCreatorComputeStatusForNetwork(agentId, network));
 }
 
 export async function POST(request: Request) {
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const agentId = String(body.agentId ?? "");
     const apiKey = String(body.apiKey ?? "");
+    const network = String(body.network ?? "mainnet");
     const signer = String(body.signer ?? "");
     const signature = String(body.signature ?? "");
     if (!agentId || !apiKey || !signer || !signature) {
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
 
     await saveCreatorComputeKey({
       agentId,
+      network,
       creator,
       apiKey,
       baseUrl: String(body.baseUrl ?? clientConfig.computeBaseUrl),
@@ -60,7 +63,7 @@ export async function POST(request: Request) {
       provider: String(body.provider ?? "0G Compute")
     });
 
-    return NextResponse.json(await getCreatorComputeStatus(agentId));
+    return NextResponse.json(await getCreatorComputeStatusForNetwork(agentId, network));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not save 0G Compute key.";
     return NextResponse.json({ error: { code: "COMPUTE_KEY_FAILED", message } }, { status: 500 });

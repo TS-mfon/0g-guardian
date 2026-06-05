@@ -113,7 +113,7 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
         <span className="section-kicker">Wallet payments</span>
         <h2>Connect a wallet to pay for 0G services.</h2>
         <p>
-          Your wallet signs agent launches, key trades, paid tasks, and revenue claims on 0G Chain.
+          Your wallet signs agent launches, key trades, paid tasks, and creator earnings claims on 0G Chain.
         </p>
       </div>
       <div className="wallet-actions">

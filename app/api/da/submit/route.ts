@@ -22,10 +22,11 @@ export async function POST(request: Request) {
     }
 
     if (process.env.OG_DEMO_MODE !== "true" && process.env.NEXT_PUBLIC_DEMO_MODE !== "true") {
-      return NextResponse.json(
-        { error: { code: "DA_NOT_CONFIGURED", message: "0G DA is not configured. The task will remain pending until DA is available." } },
-        { status: 503 }
-      );
+      return NextResponse.json({
+        commitment: "",
+        mode: "not-attached",
+        note: "0G DA is optional for this task receipt and is not configured."
+      });
     }
 
     return NextResponse.json({

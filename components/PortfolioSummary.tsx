@@ -23,11 +23,11 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
     if (!snapshot.address) return;
     try {
       const contract = await agentFunCoreReadContract();
-      const [revenue, positions] = await Promise.all([
+      const [earnings, positions] = await Promise.all([
         contract.claimable(snapshot.address),
         Promise.all(initialAgents.map(async (agent) => [agent.id, (await contract.keyBalance(BigInt(agent.id), snapshot.address)).toString()] as const))
       ]);
-      setClaimable(ethers.formatEther(revenue));
+      setClaimable(ethers.formatEther(earnings));
       setKeyPositions(Object.fromEntries(positions));
     } catch {
       setClaimable("");
@@ -67,15 +67,17 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
 
   async function claimRevenue() {
     setBusy("claim");
-    setStatus("Claiming revenue...");
+    setStatus("Claiming creator earnings...");
     try {
       const contract = await agentFunCoreContract();
+      const value = await contract.claimable(address);
+      if (value === 0n) throw new Error("No claimable creator earnings yet.");
       const tx = await contract.claimRevenue();
       await tx.wait();
       await refresh();
-      setStatus(`Revenue claimed. Tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}.`);
+      setStatus(`Creator earnings claimed. Tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}.`);
     } catch (error) {
-      setStatus(getUserMessage(error, "Revenue claim failed."));
+      setStatus(getUserMessage(error, "Creator earnings claim failed."));
     } finally {
       setBusy("");
     }
@@ -92,7 +94,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
         <div><span>Wallet</span><strong>{walletLabel}</strong><p>Management actions unlock after connecting the creator wallet.</p></div>
         <div><span>Agents launched</span><strong>{address ? createdAgents.length : "Connect wallet"}</strong><p>Filtered from confirmed AgentLaunched records.</p></div>
         <div><span>Keys held</span><strong>{address ? heldAgents.length : "Connect"}</strong><p>Your key positions are read from `keyBalance`.</p></div>
-        <div><span>Claimable revenue</span><strong>{claimable ? `${claimable} 0G` : address ? "0.0 0G" : "Connect"}</strong><p>Creator and protocol revenue settles through `claimable`.</p></div>
+        <div><span>Creator earnings</span><strong>{claimable ? `${claimable} 0G` : address ? "0.0 0G" : "Connect"}</strong><p>Claimable balance for agents and activity owned by this wallet.</p></div>
       </section>
 
       <section className="creator-console-grid">
@@ -103,7 +105,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
               <h2>Agents launched</h2>
             </div>
             <button className="secondary-button" onClick={claimRevenue} disabled={!address || !!busy || !Number(claimable)}>
-              {busy === "claim" ? "Claiming..." : "Claim revenue"}
+              {busy === "claim" ? "Claiming..." : "Claim earnings"}
             </button>
           </div>
           {!address ? <p className="empty-copy">Connect your wallet to manage agents you created on 0G Chain.</p> : null}
@@ -137,7 +139,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
             <li>Activate 0G Compute from the agent page</li>
             <li>Run one paid task test</li>
             <li>Share the agent link</li>
-            <li>Claim revenue when task/key fees accrue</li>
+            <li>Claim creator earnings when task/key activity accrues</li>
           </ul>
           <span className="section-kicker">Pending tasks</span>
           <div className="pending-task-list">

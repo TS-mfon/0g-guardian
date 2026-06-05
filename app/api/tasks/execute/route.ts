@@ -5,7 +5,7 @@ import { apiError, readJson } from "@/lib/api";
 import { clientConfig } from "@/lib/config";
 import { hashJson } from "@/lib/hash";
 import { runAgentTask } from "@/lib/compute-client";
-import { loadCreatorComputeKey } from "@/lib/creator-compute-store";
+import { loadCreatorComputeKeyForNetwork } from "@/lib/creator-compute-store";
 import { uploadBytesTo0GFromServer } from "@/lib/storage-server";
 
 function bytes32(value: string) {
@@ -68,7 +68,8 @@ export async function POST(request: Request) {
       await runningTx.wait();
     }
 
-    const creatorCompute = await loadCreatorComputeKey(prompt.agentId);
+    const network = String(body.network ?? "mainnet");
+    const creatorCompute = await loadCreatorComputeKeyForNetwork(prompt.agentId, network);
     const result = await runAgentTask({
       metadata,
       prompt,
@@ -104,6 +105,8 @@ export async function POST(request: Request) {
 
     const resultUpload = await uploadJson(resultPayload);
     const memoryUpload = await uploadJson(memoryPayload);
+    let daCommitment = ethers.ZeroHash;
+    let daStatus: "attached" | "not_attached" = "not_attached";
     const daResponse = await fetch(new URL("/api/da/submit", request.url), {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -120,17 +123,16 @@ export async function POST(request: Request) {
         computeHash
       })
     });
-    if (!daResponse.ok) {
-      const error = await daResponse.json().catch(() => null);
-      return NextResponse.json(error ?? { error: { code: "DA_NOT_READY", message: "0G DA is not ready." } }, { status: daResponse.status });
-    }
-    const da = await daResponse.json();
-    const daCommitment = String(da.commitment ?? da.blobHash ?? da.hash ?? "");
-    if (!daCommitment.startsWith("0x")) {
-      return NextResponse.json({ error: { code: "DA_INVALID", message: "0G DA did not return a valid commitment." } }, { status: 502 });
+    if (daResponse.ok) {
+      const da = await daResponse.json();
+      const candidate = String(da.commitment ?? da.blobHash ?? da.hash ?? "");
+      if (candidate.startsWith("0x")) {
+        daCommitment = bytes32(candidate);
+        daStatus = "attached";
+      }
     }
 
-    const tx = await contract.completeTask(taskId, bytes32(resultUpload.rootHash), computeHash, bytes32(daCommitment), bytes32(memoryUpload.rootHash));
+    const tx = await contract.completeTask(taskId, bytes32(resultUpload.rootHash), computeHash, daCommitment, bytes32(memoryUpload.rootHash));
     await tx.wait();
     return NextResponse.json({
       taskId: taskId.toString(),
@@ -141,6 +143,7 @@ export async function POST(request: Request) {
       memoryRoot: memoryUpload.rootHash,
       computeHash,
       daCommitment,
+      daStatus,
       runningTx: runningTxHash,
       completionTx: tx.hash
     });

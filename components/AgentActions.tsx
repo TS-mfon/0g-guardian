@@ -10,22 +10,16 @@ export function AgentActions({ agent }: { agent: AgentView }) {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState("");
   const [walletBalance, setWalletBalance] = useState("");
-  const [claimable, setClaimable] = useState("");
 
   async function refreshPosition() {
     try {
       const wallet = await getConnectedWallet();
       if (!wallet.address) return;
       const contract = await agentFunCoreContract();
-      const [keys, revenue] = await Promise.all([
-        contract.keyBalance(BigInt(agent.id), wallet.address),
-        contract.claimable(wallet.address)
-      ]);
+      const keys = await contract.keyBalance(BigInt(agent.id), wallet.address);
       setWalletBalance(keys.toString());
-      setClaimable(ethers.formatEther(revenue));
     } catch {
       setWalletBalance("");
-      setClaimable("");
     }
   }
 
@@ -72,22 +66,6 @@ export function AgentActions({ agent }: { agent: AgentView }) {
     }
   }
 
-  async function claim() {
-    setBusy("claim");
-    setStatus("Sign wallet transaction to claim revenue.");
-    try {
-      const contract = await agentFunCoreContract();
-      const tx = await contract.claimRevenue();
-      await tx.wait();
-      await refreshPosition();
-      setStatus(`Revenue claimed. Tx ${tx.hash}`);
-    } catch (error) {
-      setStatus(getUserMessage(error, "Revenue claim failed. Please retry."));
-    } finally {
-      setBusy("");
-    }
-  }
-
   return (
     <div className="action-row key-market-actions">
       <div className="key-market-panel">
@@ -95,11 +73,10 @@ export function AgentActions({ agent }: { agent: AgentView }) {
         <div><span>Sell quote</span><strong>{agent.sellQuote} 0G</strong></div>
         <div><span>Market cap</span><strong>{agent.marketCap} 0G</strong></div>
         <div><span>Your keys</span><strong>{walletBalance || "Connect wallet"}</strong></div>
-        <div><span>Claimable</span><strong>{claimable ? `${claimable} 0G` : "Connect wallet"}</strong></div>
+        <div><span>Task volume</span><strong>{agent.taskCount}</strong></div>
       </div>
       <button className="primary-button" onClick={buyKeys} disabled={!!busy}>{busy === "buy" ? "Buying..." : "Buy 1 key"}</button>
       <button className="secondary-button" onClick={sellKeys} disabled={!!busy}>{busy === "sell" ? "Selling..." : "Sell 1 key"}</button>
-      <button className="secondary-button" onClick={claim} disabled={!!busy}>{busy === "claim" ? "Claiming..." : "Claim revenue"}</button>
       {status ? <p className="status-line">{status}</p> : null}
     </div>
   );

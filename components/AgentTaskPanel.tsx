@@ -28,7 +28,8 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
     setReceipt(null);
     setStatus("Checking agent execution readiness...");
     try {
-      const readiness = await fetch(`/api/agents/compute-key?agentId=${encodeURIComponent(agent.id)}`);
+      const selectedNetwork = getSelectedNetworkKey();
+      const readiness = await fetch(`/api/agents/compute-key?agentId=${encodeURIComponent(agent.id)}&network=${encodeURIComponent(selectedNetwork)}`);
       const readinessBody = await readiness.json().catch(() => null);
       if (!readiness.ok || !readinessBody?.configured) {
         throw new Error("The creator has not linked a 0G Compute key for this agent yet.");
@@ -45,7 +46,7 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
         createdAt: new Date().toISOString()
       });
       setStatus("Uploading task prompt to 0G Storage...");
-      const upload = await uploadJsonTo0GFromBrowser(payload, signer, getSelectedNetworkKey());
+      const upload = await uploadJsonTo0GFromBrowser(payload, signer, selectedNetwork);
       const promptRoot = upload.rootHash;
       const contract = await agentFunCoreContract();
       const fee = await contract.minTaskFee();
@@ -74,7 +75,7 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
       const executeResponse = await fetch("/api/tasks/execute", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ taskId: taskId.toString(), metadata, prompt: payload, model: activeModel })
+        body: JSON.stringify({ taskId: taskId.toString(), metadata, prompt: payload, model: activeModel, network: selectedNetwork })
       });
       if (!executeResponse.ok) {
         const body = await executeResponse.json().catch(() => null);
@@ -91,6 +92,7 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
         memoryRoot: String(execution.memoryRoot),
         computeHash: String(execution.computeHash),
         daCommitment: String(execution.daCommitment),
+        daStatus: execution.daStatus === "attached" ? "attached" : "not_attached",
         runningTx: execution.runningTx ? String(execution.runningTx) : undefined,
         completionTx: String(execution.completionTx)
       });

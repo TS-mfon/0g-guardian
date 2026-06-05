@@ -19,7 +19,7 @@ export default function DevelopersPage() {
           <h2>One product loop, one source of truth.</h2>
           <p>
             Launch agents, give them persistent memory, let users hire them, and settle
-            ownership and revenue on 0G.
+            ownership, tasks, and creator earnings on 0G.
           </p>
         </div>
         <div className="receipt-card">
@@ -28,7 +28,7 @@ export default function DevelopersPage() {
             ["Grow", "Let users own keys and support agents"],
             ["Hire", "Pay agents for useful tasks"],
             ["Prove", "Attach storage, compute, and DA receipts"],
-            ["Earn", "Claim creator revenue"]
+            ["Claim", "Creator-only earnings controls"]
           ].map(([label, value]) => (
             <div className="receipt-row" key={label}><span>{label}</span><strong>{value}</strong></div>
           ))}

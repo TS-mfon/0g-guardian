@@ -12,10 +12,10 @@ export default async function PortfolioPage() {
       <SiteNav />
       <section className="page-hero">
         <span className="section-kicker">Portfolio</span>
-        <h1>Your agents, keys, tasks, and revenue.</h1>
+        <h1>Your agents, keys, tasks, and creator earnings.</h1>
         <p>
           Connect a wallet to use the on-chain contract actions: launch agents, buy keys,
-          create paid tasks, and claim creator revenue.
+          create paid tasks, activate compute, and claim creator earnings.
         </p>
       </section>
       <WalletConnect />

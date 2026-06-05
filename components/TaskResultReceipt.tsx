@@ -10,6 +10,7 @@ export interface TaskResultReceiptData {
   memoryRoot: string;
   computeHash: string;
   daCommitment: string;
+  daStatus?: "attached" | "not_attached";
   runningTx?: string;
   completionTx: string;
 }
@@ -34,7 +35,10 @@ export function TaskResultReceipt({ receipt }: { receipt: TaskResultReceiptData 
         <div className="receipt-row"><span>Result root</span><strong>{shortHash(receipt.resultRoot)}</strong></div>
         <div className="receipt-row"><span>Memory root</span><strong>{shortHash(receipt.memoryRoot)}</strong></div>
         <div className="receipt-row"><span>Compute hash</span><strong>{shortHash(receipt.computeHash)}</strong></div>
-        <div className="receipt-row"><span>DA commitment</span><strong>{shortHash(receipt.daCommitment)}</strong></div>
+        <div className="receipt-row">
+          <span>DA proof</span>
+          <strong>{receipt.daStatus === "attached" ? shortHash(receipt.daCommitment) : "Not attached"}</strong>
+        </div>
       </div>
     </section>
   );

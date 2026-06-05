@@ -4,6 +4,7 @@ import path from "path";
 
 interface StoredComputeKey {
   agentId: string;
+  network: string;
   creator: string;
   encryptedKey: string;
   iv: string;
@@ -51,8 +52,8 @@ async function writeStore(store: StoreShape) {
   await writeFile(storePath(), JSON.stringify(store, null, 2), { mode: 0o600 });
 }
 
-function normalizeAgentKey(agentId: string) {
-  return String(BigInt(agentId));
+function normalizeAgentKey(agentId: string, network = "mainnet") {
+  return `${network}:${String(BigInt(agentId))}`;
 }
 
 export function isValid0GComputeApiKey(value: string) {
@@ -61,6 +62,7 @@ export function isValid0GComputeApiKey(value: string) {
 
 export async function saveCreatorComputeKey(input: {
   agentId: string;
+  network?: string;
   creator: string;
   apiKey: string;
   baseUrl: string;
@@ -77,9 +79,11 @@ export async function saveCreatorComputeKey(input: {
   const encrypted = Buffer.concat([cipher.update(apiKey, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   const store = await readStore();
-  const agentId = normalizeAgentKey(input.agentId);
-  store[agentId] = {
+  const agentId = String(BigInt(input.agentId));
+  const network = input.network ?? "mainnet";
+  store[normalizeAgentKey(agentId, network)] = {
     agentId,
+    network,
     creator: input.creator.toLowerCase(),
     encryptedKey: encrypted.toString("base64"),
     iv: iv.toString("base64"),
@@ -93,8 +97,13 @@ export async function saveCreatorComputeKey(input: {
 }
 
 export async function getCreatorComputeStatus(agentId: string) {
+  return getCreatorComputeStatusForNetwork(agentId, "mainnet");
+}
+
+export async function getCreatorComputeStatusForNetwork(agentId: string, network = "mainnet") {
   const store = await readStore();
-  const item = store[normalizeAgentKey(agentId)];
+  const legacyKey = String(BigInt(agentId));
+  const item = store[normalizeAgentKey(agentId, network)] ?? store[normalizeAgentKey(agentId, "mainnet")] ?? store[legacyKey];
   if (!item) return { configured: false as const };
   return {
     configured: true as const,
@@ -106,8 +115,13 @@ export async function getCreatorComputeStatus(agentId: string) {
 }
 
 export async function loadCreatorComputeKey(agentId: string) {
+  return loadCreatorComputeKeyForNetwork(agentId, "mainnet");
+}
+
+export async function loadCreatorComputeKeyForNetwork(agentId: string, network = "mainnet") {
   const store = await readStore();
-  const item = store[normalizeAgentKey(agentId)];
+  const legacyKey = String(BigInt(agentId));
+  const item = store[normalizeAgentKey(agentId, network)] ?? store[normalizeAgentKey(agentId, "mainnet")] ?? store[legacyKey];
   if (!item) throw new Error("The creator has not linked a 0G Compute key for this agent yet.");
   const decipher = createDecipheriv("aes-256-gcm", encryptionSecret(), Buffer.from(item.iv, "base64"));
   decipher.setAuthTag(Buffer.from(item.tag, "base64"));

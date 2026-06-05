@@ -3,10 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { AgentCategory } from "@shared/index";
-import { computeModelsByCategory, findComputeModel, getActivationQuote, getDefaultComputeModel } from "@/lib/compute-models";
+import { computeModelsByCategory, findComputeModel, getActivationQuote, getDefaultComputeModel, isModelAllowedForCategory } from "@/lib/compute-models";
 import { clientConfig } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
-import { connectWallet, getCurrentWalletAddressSilently } from "@/lib/wallet";
+import { agentFunCoreContract, connectWallet, getCurrentWalletAddressSilently, getSelectedNetworkKey } from "@/lib/wallet";
 
 function linkMessage(input: { agentId: string; creator: string }) {
   return [
@@ -22,6 +22,7 @@ export function CreatorComputeKeyPanel({ agentId, creator, category = "custom" }
   const [status, setStatus] = useState("Checking creator compute setup...");
   const [configured, setConfigured] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [claimable, setClaimable] = useState("");
   const [isCreator, setIsCreator] = useState(false);
   const normalizedCategory = (category in computeModelsByCategory ? category : "custom") as AgentCategory;
   const [selectedModelId, setSelectedModelId] = useState(getDefaultComputeModel(normalizedCategory).id);
@@ -29,7 +30,7 @@ export function CreatorComputeKeyPanel({ agentId, creator, category = "custom" }
   const activationQuote = getActivationQuote(selectedModel);
 
   async function refreshStatus() {
-    const response = await fetch(`/api/agents/compute-key?agentId=${encodeURIComponent(agentId)}`);
+    const response = await fetch(`/api/agents/compute-key?agentId=${encodeURIComponent(agentId)}&network=${encodeURIComponent(getSelectedNetworkKey())}`);
     const body = await response.json();
     if (body.configured) {
       setConfigured(true);
@@ -40,12 +41,24 @@ export function CreatorComputeKeyPanel({ agentId, creator, category = "custom" }
     }
   }
 
+  async function refreshClaimable() {
+    try {
+      const contract = await agentFunCoreContract();
+      const value = await contract.claimable(creator);
+      setClaimable(ethers.formatEther(value));
+    } catch {
+      setClaimable("");
+    }
+  }
+
   useEffect(() => {
     async function hydrateRole() {
       const address = await getCurrentWalletAddressSilently();
       const creatorWallet = Boolean(address) && address.toLowerCase() === creator.toLowerCase();
       setIsCreator(creatorWallet);
-      if (creatorWallet) await refreshStatus();
+      if (creatorWallet) {
+        await Promise.all([refreshStatus(), refreshClaimable()]);
+      }
     }
     void hydrateRole().catch(() => setIsCreator(false));
     const onWallet = () => void hydrateRole().catch(() => setIsCreator(false));
@@ -61,6 +74,9 @@ export function CreatorComputeKeyPanel({ agentId, creator, category = "custom" }
       const { signer, address } = await connectWallet();
       if (address.toLowerCase() !== creator.toLowerCase()) {
         throw new Error("Only the agent creator can link this compute key.");
+      }
+      if (!isModelAllowedForCategory(normalizedCategory, selectedModelId)) {
+        throw new Error("Choose a 0G Compute model that supports this agent task type.");
       }
 
       setStatus("Preparing 0G Compute provider...");
@@ -109,6 +125,7 @@ export function CreatorComputeKeyPanel({ agentId, creator, category = "custom" }
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           agentId,
+          network: getSelectedNetworkKey(),
           apiKey: generatedKey,
           signer: address,
           signature,
@@ -123,6 +140,28 @@ export function CreatorComputeKeyPanel({ agentId, creator, category = "custom" }
       setStatus(`0G Compute linked for ${body.model}.`);
     } catch (error) {
       setStatus(getUserMessage(error, "Could not link 0G Compute key."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function claimEarnings() {
+    setBusy(true);
+    setStatus("Sign wallet transaction to claim creator earnings.");
+    try {
+      const { address } = await connectWallet();
+      if (address.toLowerCase() !== creator.toLowerCase()) {
+        throw new Error("Only the agent creator can claim earnings for this agent.");
+      }
+      const contract = await agentFunCoreContract();
+      const value = await contract.claimable(address);
+      if (value === 0n) throw new Error("No claimable earnings yet.");
+      const tx = await contract.claimRevenue();
+      await tx.wait();
+      await refreshClaimable();
+      setStatus(`Creator earnings claimed. Tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}.`);
+    } catch (error) {
+      setStatus(getUserMessage(error, "Creator earnings claim failed."));
     } finally {
       setBusy(false);
     }
@@ -155,8 +194,15 @@ export function CreatorComputeKeyPanel({ agentId, creator, category = "custom" }
         <span>Creator activation</span>
         <strong>{activationQuote.deposit} 0G compute + {activationQuote.protocolFee} 0G protocol fee</strong>
       </div>
+      <div className="compute-route">
+        <span>Creator earnings</span>
+        <strong>{claimable ? `${claimable} 0G claimable` : "No claimable earnings yet"}</strong>
+      </div>
       <button className="primary-button" disabled={busy}>
         {busy ? "Activating..." : configured ? "Refresh compute funding" : "Activate compute with 0G"}
+      </button>
+      <button type="button" className="secondary-button" onClick={claimEarnings} disabled={busy || !Number(claimable)}>
+        {busy ? "Working..." : "Claim earnings"}
       </button>
       {status ? <p className="status-line">{status}</p> : null}
       <a className="proof-link" href="https://compute-marketplace.0g.ai/" target="_blank" rel="noreferrer">

@@ -54,7 +54,7 @@ Request:
     "prompt": "Review this Solidity function.",
     "createdAt": "2026-05-09T00:00:00.000Z"
   },
-  "model": "zai-org/GLM-5-FP8"
+  "model": "deepseek-v4-flash"
 }
 ```
 
@@ -64,7 +64,7 @@ Response:
 {
   "response": "Task response...",
   "provider": "0G Compute workflow",
-  "model": "zai-org/GLM-5-FP8",
+  "model": "deepseek-v4-flash",
   "computeHash": "0x..."
 }
 ```
@@ -96,7 +96,7 @@ Request:
     "agentIdTokenId": "3",
     "avatar": { "prompt": "Audit AI agent" },
     "systemPrompt": "Review smart contracts carefully.",
-    "model": { "provider": "0G Compute", "modelId": "zai-org/GLM-5-FP8", "teeRequired": false },
+    "model": { "provider": "0G Compute", "modelId": "deepseek-v4-flash", "teeRequired": false },
     "pricing": { "minTaskFee": "0.0005", "chatFee": "0.0005", "creatorFeeBps": 300 },
     "createdAt": "2026-06-04T00:00:00.000Z"
   },
@@ -107,7 +107,7 @@ Request:
     "prompt": "Review this Solidity function.",
     "createdAt": "2026-06-04T00:00:00.000Z"
   },
-  "model": "zai-org/GLM-5-FP8"
+  "model": "deepseek-v4-flash"
 }
 ```
 
@@ -120,6 +120,7 @@ Response:
   "memoryRoot": "0x...",
   "computeHash": "0x...",
   "daCommitment": "0x...",
+  "daStatus": "attached",
   "completionTx": "0x..."
 }
 ```
@@ -130,7 +131,7 @@ Execution checks:
 - Rejects unpaid, completed, mismatched, or invalid tasks.
 - Runs 0G Compute.
 - Uploads result and memory to 0G Storage.
-- Submits the proof payload to 0G DA.
+- Attempts to submit the proof payload to optional 0G DA when configured.
 - Signs `completeTask` with `EXECUTOR_PRIVATE_KEY`.
 - Requires the executor wallet to be authorized on-chain with `setExecutor`.
 
@@ -162,10 +163,10 @@ Response:
 
 Production behavior:
 
-- Requires `OG_DA_GATEWAY_URL`.
-- Returns `503 DA_NOT_CONFIGURED` when DA is not configured.
+- Uses `OG_DA_GATEWAY_URL` when configured.
+- Returns a best-effort DA proof result; core task execution no longer depends on DA being configured.
 - Deterministic fallback exists only when `OG_DEMO_MODE=true`.
-- Production tasks should remain pending when DA fails.
+- Production receipts show DA as not attached when no live DA proof is available.
 
 ## POST `/api/agent/generate-profile`
 

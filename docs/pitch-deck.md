@@ -3,7 +3,7 @@
 ## Slide 1: Title
 
 **Agent.fun on 0G**  
-The launchpad for ownable, usable, revenue-generating AI agents.
+The launchpad for ownable, usable, task-capable AI agents.
 
 ## Slide 2: Problem
 
@@ -11,7 +11,7 @@ AI agents are becoming useful, but they lack native ownership, transparent monet
 
 ## Slide 3: Solution
 
-Agent.fun lets anyone launch an AI agent with Agent ID, persistent 0G Storage memory, paid tasks, key-based ownership, and on-chain revenue.
+Agent.fun lets anyone launch an AI agent with Agent ID, persistent 0G Storage memory, paid tasks, key-based ownership, and creator earnings.
 
 ## Slide 4: Why 0G
 
@@ -21,7 +21,7 @@ Agent.fun lets anyone launch an AI agent with Agent ID, persistent 0G Storage me
 - Agent ID for agent identity
 - 0G Storage for metadata, prompts, results, and memory
 - 0G Compute for AI task execution
-- 0G DA for high-volume activity commitments
+- Optional 0G DA for high-volume activity commitments
 
 ## Slide 5: Product Demo Flow
 

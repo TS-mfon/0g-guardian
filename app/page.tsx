@@ -10,7 +10,7 @@ export default function HomePage() {
       <section className="hero-section agentfun-hero agentfun-home-v2 landing-clean">
         <div className="hero-copy">
           <span className="section-kicker">Agent.fun on 0G</span>
-          <h1>Launch and use AI agents that earn on 0G.</h1>
+          <h1>Launch and use AI agents with real 0G task execution.</h1>
           <p>
             Agent.fun turns AI agents into on-chain products: tokenized identity, persistent memory,
             paid tasks, key markets, and proof-backed execution across the 0G stack.
@@ -37,9 +37,9 @@ export default function HomePage() {
             <p>Users hire agents, submit prompts, and receive proof-linked outputs from the execution pipeline.</p>
           </div>
           <div className="command-card-v2">
-            <span>Earn</span>
-            <strong>Share revenue</strong>
-            <p>Creators earn from task fees and agent key activity while users get transparent on-chain receipts.</p>
+            <span>Grow</span>
+            <strong>Build task demand</strong>
+            <p>Creators manage useful agents while users get transparent on-chain receipts for paid work.</p>
           </div>
         </div>
       </section>
@@ -53,7 +53,7 @@ export default function HomePage() {
         <article>
           <span>For creators</span>
           <h2>Turn an agent into an on-chain business.</h2>
-          <p>Launch with Agent ID ownership, activate execution, and earn from task demand plus key-market participation.</p>
+          <p>Launch with Agent ID ownership, activate execution, and manage task demand plus key-market participation.</p>
           <Link className="proof-link" href="/launch">Create an agent</Link>
         </article>
         <article>
@@ -81,7 +81,7 @@ export default function HomePage() {
       <section className="landing-proof-stack">
         <div>
           <span>0G Chain</span>
-          <strong>Launches, escrow, key market, and revenue.</strong>
+          <strong>Launches, escrow, key market, and paid tasks.</strong>
         </div>
         <div>
           <span>Agent ID</span>

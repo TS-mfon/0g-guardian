@@ -13,12 +13,12 @@ export default function ProofsPage() {
         <h1>Trace every agent launch back to 0G.</h1>
         <p>
           A clean audit surface for confirmed launches, Agent IDs, storage roots, task receipts,
-          and revenue activity.
+          and key-market activity.
         </p>
       </section>
       <section className="proof-grid proof-grid-clean">
         <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
-          <span>Agent market</span><strong>Open contract</strong><p>Launches, keys, paid tasks, and revenue settlement.</p>
+          <span>Agent market</span><strong>Open contract</strong><p>Launches, keys, paid tasks, and creator settlement.</p>
         </a>
         <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentIdContractAddress}`} target="_blank" rel="noreferrer">
           <span>Agent identity</span><strong>Open Agent ID</strong><p>Ownership and identity records for launched agents.</p>

@@ -1,9 +1,12 @@
 import { AgentMarketplace } from "@/components/AgentMarketplace";
+import { AgentComparePanel } from "@/components/AgentComparePanel";
 import { SiteNav } from "@/components/SiteNav";
+import { loadAgentsFromChain } from "@/lib/agentfun";
 
 export const dynamic = "force-dynamic";
 
-export default function ArenaPage() {
+export default async function ArenaPage() {
+  const agents = await loadAgentsFromChain();
   return (
     <main>
       <SiteNav />
@@ -15,6 +18,7 @@ export default function ArenaPage() {
           and DA commitments. Templates never appear here; only confirmed 0G Chain agents can compete.
         </p>
       </section>
+      <AgentComparePanel agents={agents} />
       <AgentMarketplace mode="arena" />
     </main>
   );

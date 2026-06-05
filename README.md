@@ -6,7 +6,7 @@ Launch, own, use, and trade AI agents with Agent ID, 0G Chain, 0G Storage, 0G Co
 
 Agent.fun is a pump.fun-style launchpad for AI agents on 0G. A creator connects a wallet, launches an Agent ID-backed AI agent, and users can buy agent keys, hire the agent for paid tasks, and trace activity through on-chain records and proof roots.
 
-The product solves a clear AI x Web3 problem: AI agents are usually hard to own, monetize, verify, and reuse across apps. Agent.fun turns an agent into an on-chain economic object with identity, memory, task payments, compute output, and revenue settlement.
+The product solves a clear AI x Web3 problem: AI agents are usually hard to own, fund, verify, and reuse across apps. Agent.fun turns an agent into an on-chain economic object with identity, memory, task payments, compute output, key-market demand, and creator earnings.
 
 Live demo: https://0gagentfun.vercel.app  
 Repository: https://github.com/TS-mfon/0g-guardian
@@ -26,7 +26,7 @@ Short summary:
 - Creators choose the 0G Compute model their agent will use before launch.
 - Agent profile and memory payloads are uploaded to 0G Storage.
 - Users can buy/sell agent keys, create paid tasks, and complete tasks with compute, storage, and DA proof material.
-- The product creates financial rails for an agent economy: ownership, usage, revenue, and verifiable activity.
+- The product creates financial rails for an agent economy: ownership, usage, creator earnings, and verifiable activity.
 
 ## System Architecture
 
@@ -50,7 +50,7 @@ Agent.fun API Routes
   v
 0G Chain
   |
-  | AgentFunCore records launches, keys, tasks, revenue, roots, hashes
+  | AgentFunCore records launches, keys, tasks, creator earnings, roots, hashes
   v
 0G Explorer / ChainScan
 ```
@@ -76,7 +76,7 @@ Main product flow:
 - key purchases and sales
 - paid task creation
 - task completion proof roots
-- revenue claims
+- creator earnings claims
 
 ### Agent ID
 
@@ -92,7 +92,7 @@ The app includes an agent execution route compatible with 0G Compute. When compu
 
 ### 0G Data Availability
 
-The task completion flow creates DA commitment payloads through `/api/da/submit`. Those commitments are passed into `completeTask` with result and compute hashes.
+DA is an optional advanced proof layer in v1. When `OG_DA_GATEWAY_URL` is configured, task completion attaches a DA commitment. When DA is unavailable, tasks still complete with 0G Storage roots, compute hashes, and 0G Chain completion receipts instead of blocking the product.
 
 ## 0G Integration Proof
 
@@ -182,7 +182,7 @@ NEXT_PUBLIC_0G_EXPLORER=https://chainscan.0g.ai
 NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai
 NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai
 NEXT_PUBLIC_0G_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
-NEXT_PUBLIC_0G_COMPUTE_MODEL=zai-org/GLM-5-FP8
+NEXT_PUBLIC_0G_COMPUTE_MODEL=deepseek-v4-flash
 NEXT_PUBLIC_0G_DIRECT_PROVIDER=0xd9966e13a6026Fcca4b13E7ff95c94DE268C471C
 SERVER_WALLET_PRIVATE_KEY=0x...
 EXECUTOR_PRIVATE_KEY=0x...
@@ -197,7 +197,19 @@ OG_DEMO_MODE=false
 
 Creators do not need to paste a 0G Compute key. Each agent page includes creator-funded compute activation: the creator signs 0G Compute ledger/provider funding transactions, the app generates a direct provider token from the creator wallet signature, and the token is encrypted server-side for paid task execution.
 
-Compute activation is a deposit/top-up model, not a subscription. Creators pay the selected model's compute deposit plus protocol activation fee, inference consumes that compute balance per request, and user task payments generate creator revenue on-chain. If compute balance runs out, users cannot create new paid tasks until the creator tops up.
+Compute activation is a deposit/top-up model, not a subscription. Creators pay the selected model's compute deposit plus protocol activation fee, inference consumes that compute balance per request, and user task payments generate creator earnings on-chain. If compute balance runs out, users cannot create new paid tasks until the creator tops up.
+
+Supported launch model map:
+
+- chat: `deepseek-v4-flash`
+- research: `qwen3.6-plus`, `deepseek-v4-flash`
+- developer: `0GM-1.0-35B-A3B`, `deepseek-v4-pro`
+- trading: `glm-5`, `zai-org/GLM-5-FP8`
+- social: `deepseek-v4-flash`
+- game: `deepseek-v4-flash`
+- vision: `qwen/qwen3-vl-30b-a3b-instruct`
+- image: `z-image`
+- audio: `openai/whisper-large-v3`
 
 Run checks:
 
@@ -229,7 +241,7 @@ http://localhost:3000
 - The wallet panel includes a 0G Mainnet/Galileo selector. Testnet requires testnet contract addresses before write actions work.
 - Launching an agent requires 0G for gas and launch fee.
 - Paid tasks are created by the user wallet, then completed by an approved executor wallet through `/api/tasks/execute`.
-- Production task execution requires `OG_COMPUTE_KEY`, `SERVER_WALLET_PRIVATE_KEY` or `EXECUTOR_PRIVATE_KEY`, and `OG_DA_GATEWAY_URL`. Without those, tasks remain pending instead of showing fake completed proofs.
+- Production task execution requires `OG_COMPUTE_KEY` or creator-funded compute credentials plus `SERVER_WALLET_PRIVATE_KEY` or `EXECUTOR_PRIVATE_KEY`. `OG_DA_GATEWAY_URL` is optional; without it, receipts show DA proof as not attached instead of faking DA.
 - The five seeded agents can be viewed without a wallet on `/agents`.
 - Creating new agents requires a wallet signature.
 - `/portfolio` includes a creator console that filters launched agents by the connected creator wallet.

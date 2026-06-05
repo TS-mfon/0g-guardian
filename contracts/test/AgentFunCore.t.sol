@@ -14,6 +14,8 @@ contract AgentFunCoreTest is Test {
         core = new AgentFunCore();
     }
 
+    receive() external payable {}
+
     function _launch() internal returns (uint256 agentId) {
         vm.deal(creator, 10 ether);
         vm.prank(creator);
@@ -40,6 +42,15 @@ contract AgentFunCoreTest is Test {
     function testLaunchFeeAccruesToProtocolOwner() public {
         _launch();
         assertEq(core.claimable(address(this)), 0.001 ether);
+    }
+
+    function testProtocolOwnerCanClaimLaunchFee() public {
+        _launch();
+        uint256 beforeBalance = address(this).balance;
+        uint256 claimed = core.claimRevenue();
+        assertEq(claimed, 0.001 ether);
+        assertEq(core.claimable(address(this)), 0);
+        assertEq(address(this).balance, beforeBalance + 0.001 ether);
     }
 
     function testRejectDuplicateAgentId() public {
@@ -87,6 +98,22 @@ contract AgentFunCoreTest is Test {
         assertTrue(core.getBuyPrice(agentId, 1) > firstKey);
     }
 
+    function testCreatorCanClaimAfterKeyPurchase() public {
+        uint256 agentId = _launch();
+        uint256 firstKey = core.getBuyPrice(agentId, 1);
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        core.buyKeys{value: firstKey}(agentId, 1);
+
+        uint256 creatorFee = (firstKey * core.creatorFeeBps()) / core.BPS();
+        uint256 beforeBalance = creator.balance;
+        vm.prank(creator);
+        uint256 claimed = core.claimRevenue();
+        assertEq(claimed, creatorFee);
+        assertEq(core.claimable(creator), 0);
+        assertEq(creator.balance, beforeBalance + creatorFee);
+    }
+
     function _createTask(uint256 agentId) internal returns (uint256 taskId) {
         vm.deal(user, 10 ether);
         vm.prank(user);
@@ -129,6 +156,23 @@ contract AgentFunCoreTest is Test {
         assertEq(agent.totalRevenue, 0.001 ether - protocolFee);
         assertEq(core.claimable(creator), 0.001 ether - protocolFee);
         assertEq(core.claimable(address(this)), 0.001 ether + protocolFee);
+    }
+
+    function testCreatorCanClaimAfterCompletedTask() public {
+        uint256 agentId = _launch();
+        uint256 taskId = _createTask(agentId);
+
+        core.markTaskRunning(taskId);
+        core.completeTask(taskId, bytes32(uint256(11)), bytes32(uint256(12)), bytes32(uint256(13)), bytes32(uint256(14)));
+
+        uint256 protocolFee = (0.001 ether * core.protocolFeeBps()) / core.BPS();
+        uint256 creatorAmount = 0.001 ether - protocolFee;
+        uint256 beforeBalance = creator.balance;
+        vm.prank(creator);
+        uint256 claimed = core.claimRevenue();
+        assertEq(claimed, creatorAmount);
+        assertEq(core.claimable(creator), 0);
+        assertEq(creator.balance, beforeBalance + creatorAmount);
     }
 
     function testOwnerCanApproveExecutor() public {
