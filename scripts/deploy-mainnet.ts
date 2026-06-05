@@ -19,9 +19,9 @@ for (const file of [".envvv", ".env.local", ".env"]) {
 }
 
 const rpcUrl = process.env.ZERO_G_RPC_URL ?? process.env.NEXT_PUBLIC_0G_RPC_URL ?? "https://evmrpc.0g.ai";
-const privateKey = process.env.DEPLOYER_PRIVATE_KEY ?? process.env.PRIVATE_KEY;
+const privateKey = process.env.DEPLOYER_PRIVATE_KEY ?? process.env.DEPLOYER_PRIVATEKEY ?? process.env.PRIVATE_KEY;
 
-if (!privateKey) throw new Error("DEPLOYER_PRIVATE_KEY or PRIVATE_KEY must be set locally.");
+if (!privateKey) throw new Error("DEPLOYER_PRIVATE_KEY, DEPLOYER_PRIVATEKEY, or PRIVATE_KEY must be set locally.");
 
 const provider = new ethers.JsonRpcProvider(rpcUrl, 16661);
 const wallet = new ethers.Wallet(privateKey, provider);
@@ -56,6 +56,9 @@ async function main() {
     "NEXT_PUBLIC_0G_EXPLORER=https://chainscan.0g.ai",
     "NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai",
     "NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai",
+    "NEXT_PUBLIC_0G_COMPUTE_BASE_URL=https://router-api.0g.ai/v1",
+    "NEXT_PUBLIC_0G_COMPUTE_MODEL=zai-org/GLM-5-FP8",
+    "NEXT_PUBLIC_0G_DIRECT_PROVIDER=0xd9966e13a6026Fcca4b13E7ff95c94DE268C471C",
     `AGENT_FUN_CORE_DEPLOY_TX=${agentFun.txHash}`,
     `AGENT_ID_DEPLOY_TX=${agentId.txHash}`,
     `DEPLOYMENT_BLOCK=${Math.min(agentFun.blockNumber, agentId.blockNumber)}`

@@ -101,7 +101,9 @@ contract AgentFunCore {
         bytes32 resultRoot,
         bytes32 computeHash,
         bytes32 daCommitment,
-        bytes32 newMemoryRoot
+        bytes32 newMemoryRoot,
+        uint256 creatorAmount,
+        uint256 protocolFee
     );
     event TaskRefunded(uint256 indexed taskId, address indexed requester, uint256 amount);
     event TaskRated(uint256 indexed taskId, uint8 rating);
@@ -325,14 +327,18 @@ contract AgentFunCore {
     ) external onlyTaskExecutor {
         if (tasks[taskId].id == 0) revert TaskNotFound();
         Task storage task = tasks[taskId];
-        if (task.status != TaskStatus.OPEN && task.status != TaskStatus.RUNNING) revert InvalidTaskStatus();
+        if (task.status != TaskStatus.RUNNING) revert InvalidTaskStatus();
         if (block.timestamp > task.deadline) revert TaskExpired();
         Agent storage agent = agents[task.agentId];
         if (resultRoot == bytes32(0) || computeHash == bytes32(0) || daCommitment == bytes32(0) || newMemoryRoot == bytes32(0)) {
             revert InvalidInput();
         }
 
+        uint256 fee = task.fee;
+        uint256 protocolFee = (fee * protocolFeeBps) / BPS;
+        uint256 creatorAmount = fee - protocolFee;
         task.executor = msg.sender;
+        task.fee = 0;
         task.resultRoot = resultRoot;
         task.computeHash = computeHash;
         task.daCommitment = daCommitment;
@@ -340,11 +346,12 @@ contract AgentFunCore {
         task.completedAt = block.timestamp;
         bytes32 previousRoot = agent.memoryRoot;
         agent.memoryRoot = newMemoryRoot;
-        agent.totalRevenue += task.fee;
-        claimable[agent.creator] += task.fee;
+        agent.totalRevenue += creatorAmount;
+        claimable[agent.creator] += creatorAmount;
+        claimable[owner] += protocolFee;
 
         emit AgentMemoryUpdated(task.agentId, previousRoot, newMemoryRoot);
-        emit TaskCompleted(taskId, task.agentId, msg.sender, resultRoot, computeHash, daCommitment, newMemoryRoot);
+        emit TaskCompleted(taskId, task.agentId, msg.sender, resultRoot, computeHash, daCommitment, newMemoryRoot, creatorAmount, protocolFee);
     }
 
     function cancelExpiredTask(uint256 taskId) external nonReentrant returns (uint256 refund) {
@@ -415,5 +422,27 @@ contract AgentFunCore {
 
     function getAllTaskIds() external view returns (uint256[] memory) {
         return allTaskIds;
+    }
+
+    function getAgentIds(uint256 offset, uint256 limit) external view returns (uint256[] memory page) {
+        uint256 length = allAgentIds.length;
+        if (offset >= length) return new uint256[](0);
+        uint256 end = offset + limit;
+        if (end > length) end = length;
+        page = new uint256[](end - offset);
+        for (uint256 i = offset; i < end; i += 1) {
+            page[i - offset] = allAgentIds[i];
+        }
+    }
+
+    function getTaskIds(uint256 offset, uint256 limit) external view returns (uint256[] memory page) {
+        uint256 length = allTaskIds.length;
+        if (offset >= length) return new uint256[](0);
+        uint256 end = offset + limit;
+        if (end > length) end = length;
+        page = new uint256[](end - offset);
+        for (uint256 i = offset; i < end; i += 1) {
+            page[i - offset] = allTaskIds[i];
+        }
     }
 }

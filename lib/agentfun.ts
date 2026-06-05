@@ -33,7 +33,12 @@ export async function loadAgentsFromChain(): Promise<AgentView[]> {
   const contract = readAgentFunContract();
   if (!contract) return [];
   try {
-    const ids: bigint[] = await contract.getAllAgentIds();
+    let ids: bigint[];
+    try {
+      ids = await contract.getAgentIds(0, 100);
+    } catch {
+      ids = await contract.getAllAgentIds();
+    }
     const agents = await Promise.all(ids.map(async (id) => {
       const agent = await contract.getAgent(id);
       const keySupply = await contract.keySupply(id);
@@ -61,4 +66,13 @@ export async function loadAgentsFromChain(): Promise<AgentView[]> {
     console.warn("Unable to load Agent.fun agents from 0G Chain", error);
     return [];
   }
+}
+
+export function getAgentMarketStats(agents: AgentView[]) {
+  return {
+    liveAgents: agents.length,
+    activeAgents: agents.filter((agent) => agent.active).length,
+    totalTasks: agents.reduce((sum, agent) => sum + Number(agent.taskCount), 0),
+    totalRevenue: agents.reduce((sum, agent) => sum + Number(agent.totalRevenue), 0)
+  };
 }

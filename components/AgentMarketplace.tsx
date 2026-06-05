@@ -1,28 +1,63 @@
 import Link from "next/link";
-import { loadAgentsFromChain } from "@/lib/agentfun";
+import { AgentView, loadAgentsFromChain } from "@/lib/agentfun";
 import { genesisTemplates } from "@/lib/agent-templates";
+import { clientConfig, zeroGNetworks } from "@/lib/config";
 
-export async function AgentMarketplace() {
+export async function AgentMarketplace({ mode = "marketplace" }: { mode?: "marketplace" | "arena" }) {
   const agents = await loadAgentsFromChain();
+  if (!agents.length && mode === "arena") {
+    return (
+      <section className="arena-empty-state">
+        <span className="status-badge pending">No live agents</span>
+        <h2>Arena opens after real on-chain launches.</h2>
+        <p>
+          This page only shows agents registered through confirmed 0G Chain activity.
+          Launch an agent first, activate compute, then it can compete here.
+        </p>
+        <Link className="primary-button" href="/launch">Launch the first arena agent</Link>
+      </section>
+    );
+  }
+
   return (
     <section className="market-grid">
-      {agents.length ? agents.map((agent) => (
-        <Link className="agent-tile" href={`/agents/${agent.id}`} key={agent.id}>
-          <div className="agent-orb">{agent.symbol.slice(0, 2)}</div>
-          <span>{agent.category} · Agent #{agent.id}</span>
-          <h3>{agent.name}</h3>
-          <p>Agent ID {agent.agentIdTokenId}. {agent.taskCount} paid tasks. {agent.keySupply} keys issued.</p>
-          <strong>{agent.totalRevenue} 0G revenue</strong>
-        </Link>
-      )) : genesisTemplates.map((agent) => (
+      {agents.length ? agents.map((agent) => <LiveAgentTile agent={agent} key={agent.id} />) : <GenesisLaunchTemplates />}
+    </section>
+  );
+}
+
+function LiveAgentTile({ agent }: { agent: AgentView }) {
+  return (
+    <Link className="agent-tile live-agent-tile" href={`/agents/${agent.id}`}>
+      <div className="agent-tile-top">
+        <div className="agent-orb">{agent.symbol.slice(0, 2)}</div>
+        <span className={agent.active ? "status-badge success" : "status-badge danger"}>{agent.active ? "Live" : "Paused"}</span>
+      </div>
+      <span>{agent.category} · Agent #{agent.id}</span>
+      <h3>{agent.name}</h3>
+      <p>Agent ID {agent.agentIdTokenId}. {agent.taskCount} paid tasks. {agent.keySupply} keys issued.</p>
+      <div className="agent-tile-metrics">
+        <strong>{agent.totalRevenue} 0G revenue</strong>
+        <em>{agent.reserve} 0G reserve</em>
+      </div>
+      <span className="chain-link-copy">View verified agent</span>
+    </Link>
+  );
+}
+
+function GenesisLaunchTemplates() {
+  const chainLabel = clientConfig.chainId === zeroGNetworks.testnet.chainId ? zeroGNetworks.testnet.label : zeroGNetworks.mainnet.label;
+  return (
+    <>
+      {genesisTemplates.map((agent) => (
         <Link className="agent-tile template" href="/launch" key={agent.name}>
           <div className="agent-orb">{agent.symbol.slice(0, 2)}</div>
-          <span>Genesis template · launch on-chain</span>
+          <span>Launch template · not on-chain yet</span>
           <h3>{agent.name}</h3>
           <p>{agent.description}</p>
-          <strong>Launch this agent</strong>
+          <strong>Launch this agent on {chainLabel}</strong>
         </Link>
       ))}
-    </section>
+    </>
   );
 }

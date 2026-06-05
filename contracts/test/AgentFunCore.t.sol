@@ -95,16 +95,21 @@ contract AgentFunCoreTest is Test {
         uint256 agentId = _launch();
         uint256 taskId = _createTask(agentId);
 
+        core.markTaskRunning(taskId);
         core.completeTask(taskId, bytes32(uint256(11)), bytes32(uint256(12)), bytes32(uint256(13)), bytes32(uint256(14)));
 
         AgentFunCore.Task memory task = core.getTask(taskId);
         assertEq(uint256(task.status), uint256(AgentFunCore.TaskStatus.COMPLETED));
         assertEq(uint256(task.resultRoot), 11);
+        assertEq(task.fee, 0);
         assertEq(task.executor, address(this));
         AgentFunCore.Agent memory agent = core.getAgent(agentId);
         assertEq(uint256(agent.memoryRoot), 14);
         assertEq(agent.taskCount, 1);
-        assertEq(agent.totalRevenue, 0.001 ether);
+        uint256 protocolFee = (0.001 ether * core.protocolFeeBps()) / core.BPS();
+        assertEq(agent.totalRevenue, 0.001 ether - protocolFee);
+        assertEq(core.claimable(creator), 0.001 ether - protocolFee);
+        assertEq(core.claimable(address(this)), 0.001 ether + protocolFee);
     }
 
     function testOwnerCanApproveExecutor() public {
@@ -112,6 +117,8 @@ contract AgentFunCoreTest is Test {
         uint256 taskId = _createTask(agentId);
         core.setExecutor(executor, true);
 
+        vm.prank(executor);
+        core.markTaskRunning(taskId);
         vm.prank(executor);
         core.completeTask(taskId, bytes32(uint256(11)), bytes32(uint256(12)), bytes32(uint256(13)), bytes32(uint256(14)));
 
@@ -136,9 +143,18 @@ contract AgentFunCoreTest is Test {
     function testCannotCompleteExpiredTask() public {
         uint256 agentId = _launch();
         uint256 taskId = _createTask(agentId);
+        core.markTaskRunning(taskId);
         vm.warp(block.timestamp + 2 days);
 
         vm.expectRevert(AgentFunCore.TaskExpired.selector);
+        core.completeTask(taskId, bytes32(uint256(11)), bytes32(uint256(12)), bytes32(uint256(13)), bytes32(uint256(14)));
+    }
+
+    function testCannotCompleteOpenTaskWithoutRunningState() public {
+        uint256 agentId = _launch();
+        uint256 taskId = _createTask(agentId);
+
+        vm.expectRevert(AgentFunCore.InvalidTaskStatus.selector);
         core.completeTask(taskId, bytes32(uint256(11)), bytes32(uint256(12)), bytes32(uint256(13)), bytes32(uint256(14)));
     }
 
@@ -200,5 +216,34 @@ contract AgentFunCoreTest is Test {
         core.updateMemoryRoot(agentId, bytes32(uint256(11)));
         AgentFunCore.Agent memory agent = core.getAgent(agentId);
         assertEq(uint256(agent.memoryRoot), 11);
+    }
+
+    function testPaginatedAgentAndTaskIds() public {
+        uint256 agentOne = _launch();
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        uint256 agentTwo = core.launchAgent{value: 0.001 ether}(
+            "Beta",
+            "BETA",
+            "chat",
+            102,
+            bytes32(uint256(4)),
+            bytes32(uint256(5)),
+            bytes32(uint256(6))
+        );
+        uint256 taskOne = _createTask(agentOne);
+        uint256 taskTwo = _createTask(agentTwo);
+
+        uint256[] memory agentsPage = core.getAgentIds(1, 10);
+        assertEq(agentsPage.length, 1);
+        assertEq(agentsPage[0], agentTwo);
+
+        uint256[] memory tasksPage = core.getTaskIds(0, 1);
+        assertEq(tasksPage.length, 1);
+        assertEq(tasksPage[0], taskOne);
+
+        tasksPage = core.getTaskIds(1, 2);
+        assertEq(tasksPage.length, 1);
+        assertEq(tasksPage[0], taskTwo);
     }
 }

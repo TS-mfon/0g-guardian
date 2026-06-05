@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@0gfoundation/0g-compute-ts-sdk": "^0.8.1",
-    "@0gfoundation/0g-storage-ts-sdk": "^1.2.9",
+    "@0gfoundation/0g-storage-ts-sdk": "^1.2.10",
     "@0gfoundation/0g-ts-sdk": "^1.2.6",
     "ethers": "6.13.1",
     "next": "^16.2.7",
@@ -36,5 +36,10 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "axios": "^1.17.0",
+    "postcss": "^8.5.15",
+    "ws": "^8.21.0"
   }
 }

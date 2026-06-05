@@ -50,6 +50,8 @@ export const agentFunCoreAbi = [
   "function getTask(uint256 taskId) view returns ((uint256 id,uint256 agentId,address requester,address executor,uint256 fee,bytes32 promptRoot,bytes32 resultRoot,bytes32 computeHash,bytes32 daCommitment,uint8 status,uint256 createdAt,uint256 deadline,uint256 completedAt,uint8 rating))",
   "function getAllAgentIds() view returns (uint256[])",
   "function getAllTaskIds() view returns (uint256[])",
+  "function getAgentIds(uint256 offset,uint256 limit) view returns (uint256[])",
+  "function getTaskIds(uint256 offset,uint256 limit) view returns (uint256[])",
   "event AgentLaunched(uint256 indexed agentId,address indexed creator,uint256 indexed agentIdTokenId,string name,string symbol,bytes32 metadataRoot,bytes32 memoryRoot)",
   "event AgentMemoryUpdated(uint256 indexed agentId,bytes32 previousRoot,bytes32 newRoot)",
   "event AgentStatusChanged(uint256 indexed agentId,bool active)",
@@ -59,7 +61,7 @@ export const agentFunCoreAbi = [
   "event KeysSold(uint256 indexed agentId,address indexed seller,uint256 keysIn,uint256 received)",
   "event TaskCreated(uint256 indexed taskId,uint256 indexed agentId,address indexed requester,uint256 fee,bytes32 promptRoot,uint256 deadline)",
   "event TaskRunning(uint256 indexed taskId,address indexed executor)",
-  "event TaskCompleted(uint256 indexed taskId,uint256 indexed agentId,address indexed executor,bytes32 resultRoot,bytes32 computeHash,bytes32 daCommitment,bytes32 newMemoryRoot)",
+  "event TaskCompleted(uint256 indexed taskId,uint256 indexed agentId,address indexed executor,bytes32 resultRoot,bytes32 computeHash,bytes32 daCommitment,bytes32 newMemoryRoot,uint256 creatorAmount,uint256 protocolFee)",
   "event TaskRefunded(uint256 indexed taskId,address indexed requester,uint256 amount)",
   "event TaskRated(uint256 indexed taskId,uint8 rating)",
   "event RevenueClaimed(address indexed account,uint256 amount)"

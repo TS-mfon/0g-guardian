@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Contract, JsonRpcProvider, Wallet, ethers } from "ethers";
 import { agentFunCoreAbi, agentMemorySchema, agentMetadataSchema, taskPromptSchema } from "@shared/index";
+import { apiError, readJson } from "@/lib/api";
 import { clientConfig } from "@/lib/config";
 import { hashJson } from "@/lib/hash";
 import { runAgentTask } from "@/lib/compute-client";
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: { code: "CONTRACT_NOT_CONFIGURED", message: "Agent.fun contract is not configured." } }, { status: 500 });
     }
 
-    const body = await request.json();
+    const body = await readJson(request, 96_000);
     const taskId = BigInt(String(body.taskId ?? "0"));
     if (taskId === 0n) {
       return NextResponse.json({ error: { code: "INVALID_TASK", message: "A valid task ID is required." } }, { status: 400 });
@@ -58,6 +59,13 @@ export async function POST(request: Request) {
     }
     if (BigInt(task.fee) <= 0n) {
       return NextResponse.json({ error: { code: "TASK_UNPAID", message: "This task has no escrowed payment." } }, { status: 402 });
+    }
+
+    let runningTxHash = "";
+    if (status === 1) {
+      const runningTx = await contract.markTaskRunning(taskId);
+      runningTxHash = runningTx.hash;
+      await runningTx.wait();
     }
 
     const creatorCompute = await loadCreatorComputeKey(prompt.agentId);
@@ -130,10 +138,10 @@ export async function POST(request: Request) {
       memoryRoot: memoryUpload.rootHash,
       computeHash,
       daCommitment,
+      runningTx: runningTxHash,
       completionTx: tx.hash
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Task execution failed.";
-    return NextResponse.json({ error: { code: "TASK_EXECUTION_FAILED", message } }, { status: 500 });
+    return apiError(error, "Task execution failed.");
   }
 }
