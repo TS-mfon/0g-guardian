@@ -134,6 +134,9 @@ export async function POST(request: Request) {
     await tx.wait();
     return NextResponse.json({
       taskId: taskId.toString(),
+      answer: result.response,
+      model: result.model,
+      provider: result.provider,
       resultRoot: resultUpload.rootHash,
       memoryRoot: memoryUpload.rootHash,
       computeHash,

@@ -25,15 +25,21 @@ export async function connectWallet() {
   return { provider, signer, address };
 }
 
-export async function getConnectedWallet() {
+export async function getWalletSnapshotSilently() {
   const provider = await getBrowserProvider();
   const accounts = await provider.send("eth_accounts", []);
   const address = Array.isArray(accounts) && accounts[0] ? String(accounts[0]) : "";
-  if (!address) return { provider, address: "", balance: "" };
-  await ensureZeroGNetwork(provider);
-  const rawBalance = await provider.getBalance(address);
-  rememberWallet(address);
-  return { provider, address, balance: ethers.formatEther(rawBalance) };
+  const chainId = Number((await provider.getNetwork()).chainId);
+  const selected = getZeroGNetwork(getSelectedNetworkKey());
+  return { provider, address, chainId, selectedNetwork: selected, isCorrectNetwork: chainId === selected.chainId };
+}
+
+export async function getConnectedWallet() {
+  const snapshot = await getWalletSnapshotSilently();
+  if (!snapshot.address) return { ...snapshot, balance: "" };
+  const rawBalance = await snapshot.provider.getBalance(snapshot.address);
+  rememberWallet(snapshot.address);
+  return { ...snapshot, balance: ethers.formatEther(rawBalance) };
 }
 
 export async function getCurrentWalletAddressSilently() {
@@ -116,14 +122,33 @@ export async function verifySelectedNetworkContracts(provider: BrowserProvider) 
   return selected;
 }
 
+export async function getSignerForAction() {
+  const provider = await getBrowserProvider();
+  const accounts = await provider.send("eth_accounts", []);
+  if (!Array.isArray(accounts) || !accounts[0]) {
+    await provider.send("eth_requestAccounts", []);
+  }
+  await ensureZeroGNetwork(provider);
+  const signer = await provider.getSigner();
+  const address = await signer.getAddress();
+  rememberWallet(address);
+  return { provider, signer, address };
+}
+
+export async function agentFunCoreReadContract(networkKey = getSelectedNetworkKey()) {
+  const provider = await getBrowserProvider();
+  const selected = getZeroGNetwork(networkKey);
+  return new Contract(selected.agentFunCoreAddress, agentFunCoreAbi, provider);
+}
+
 export async function agentFunCoreContract(networkKey = getSelectedNetworkKey()) {
-  const { signer } = await connectWallet();
+  const { signer } = await getSignerForAction();
   const selected = getZeroGNetwork(networkKey);
   return new Contract(selected.agentFunCoreAddress, agentFunCoreAbi, signer);
 }
 
 export async function agentIdContract(networkKey = getSelectedNetworkKey()) {
-  const { signer } = await connectWallet();
+  const { signer } = await getSignerForAction();
   const selected = getZeroGNetwork(networkKey);
   return new Contract(selected.agentIdContractAddress, agenticIdAbi, signer);
 }

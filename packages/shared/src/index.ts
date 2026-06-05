@@ -80,7 +80,7 @@ export const agenticIdAbi = [
   "event AgentMetadataUpdated(uint256 indexed tokenId,string encryptedURI,bytes32 metadataHash)"
 ] as const;
 
-export const categorySchema = z.enum(["chat", "research", "trading", "social", "game", "developer", "custom"]);
+export const categorySchema = z.enum(["chat", "research", "trading", "social", "game", "developer", "vision", "image", "audio", "custom"]);
 
 export const agentMetadataSchema = z.object({
   version: z.literal("1.0"),
@@ -100,6 +100,8 @@ export const agentMetadataSchema = z.object({
   model: z.object({
     provider: z.literal("0G Compute"),
     modelId: z.string().min(1),
+    tier: z.enum(["cheap", "default", "premium"]).optional(),
+    modality: z.enum(["chat", "vision", "image", "audio"]).optional(),
     teeRequired: z.boolean()
   }),
   pricing: z.object({

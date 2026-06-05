@@ -5,7 +5,8 @@ import { ethers } from "ethers";
 import { AgentCategory, agentMetadataSchema, agentMemorySchema } from "@shared/index";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { genesisTemplates } from "@/lib/agent-templates";
-import { clientConfig, getZeroGNetwork, ZeroGNetworkKey } from "@/lib/config";
+import { agentCategories, computeModelsByCategory, findComputeModel, getActivationQuote, getDefaultComputeModel } from "@/lib/compute-models";
+import { getZeroGNetwork, ZeroGNetworkKey } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { hashJson, shortHash } from "@/lib/hash";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
@@ -27,6 +28,7 @@ export function LaunchAgentForm() {
   const [name, setName] = useState(template.name);
   const [symbol, setSymbol] = useState(template.symbol);
   const [category, setCategory] = useState<AgentCategory>(template.category);
+  const [selectedModelId, setSelectedModelId] = useState(getDefaultComputeModel(template.category).id);
   const [description, setDescription] = useState(template.description);
   const [systemPrompt, setSystemPrompt] = useState(template.systemPrompt);
   const [agentIdTokenId, setAgentIdTokenId] = useState("1001");
@@ -34,8 +36,12 @@ export function LaunchAgentForm() {
   const [txHash, setTxHash] = useState("");
   const [verifiedProof, setVerifiedProof] = useState({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
   const [busy, setBusy] = useState(false);
+  const [launchedAgentId, setLaunchedAgentId] = useState("");
   const [networkKey, setNetworkKey] = useState<ZeroGNetworkKey>("mainnet");
   const network = getZeroGNetwork(networkKey);
+  const selectedModel = findComputeModel(category, selectedModelId);
+  const activationQuote = getActivationQuote(selectedModel);
+  const canLaunch = Boolean(name.trim() && symbol.trim() && description.trim() && systemPrompt.trim() && selectedModelId) && !busy;
 
   useEffect(() => {
     setNetworkKey(getSelectedNetworkKey());
@@ -50,8 +56,14 @@ export function LaunchAgentForm() {
     setName(next.name);
     setSymbol(next.symbol);
     setCategory(next.category);
+    setSelectedModelId(getDefaultComputeModel(next.category).id);
     setDescription(next.description);
     setSystemPrompt(next.systemPrompt);
+  }
+
+  function changeCategory(value: AgentCategory) {
+    setCategory(value);
+    setSelectedModelId(getDefaultComputeModel(value).id);
   }
 
   async function launch(event: FormEvent) {
@@ -59,6 +71,7 @@ export function LaunchAgentForm() {
     setBusy(true);
     setStatus("Connecting wallet...");
     setTxHash("");
+    setLaunchedAgentId("");
     setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
     try {
       const { provider, signer, address } = await connectWallet();
@@ -79,7 +92,7 @@ export function LaunchAgentForm() {
         agentIdTokenId: nextTokenIdText,
         avatar: { prompt: template.avatarPrompt },
         systemPrompt,
-        model: { provider: "0G Compute", modelId: clientConfig.computeModel, teeRequired: category === "trading" },
+        model: { provider: "0G Compute", modelId: selectedModel.id, tier: selectedModel.tier, modality: selectedModel.modality, teeRequired: Boolean(selectedModel.teeRequired || category === "trading") },
         pricing: { minTaskFee: "0.0005", chatFee: "0.0005", creatorFeeBps: 300 },
         createdAt: now
       });
@@ -99,7 +112,7 @@ export function LaunchAgentForm() {
       const memoryUpload = await uploadJsonTo0GFromBrowser(memory, signer, selectedNetwork.key);
       const metadataRoot = metadataUpload.rootHash;
       const memoryRoot = memoryUpload.rootHash;
-      const capabilityHash = hashJson({ category, systemPrompt, model: clientConfig.computeModel });
+      const capabilityHash = hashJson({ category, systemPrompt, model: selectedModel.id, tier: selectedModel.tier, teeRequired: selectedModel.teeRequired });
 
       setStatus("Minting Agent ID token...");
       const mintTx = await idContract.mint(address, metadataRoot, bytes32(metadataRoot));
@@ -110,6 +123,7 @@ export function LaunchAgentForm() {
       setStatus("Signing launchAgent transaction on 0G Chain...");
       const contract = await agentFunCoreContract(selectedNetwork.key);
       const launchFee = await contract.launchFee();
+      const nextAgentId = await contract.nextAgentId();
       const tx = await contract.launchAgent(
         name,
         symbol.toUpperCase(),
@@ -122,8 +136,9 @@ export function LaunchAgentForm() {
       );
       setTxHash(tx.hash);
       await tx.wait();
+      setLaunchedAgentId(nextAgentId.toString());
       setVerifiedProof({ agentId: nextTokenIdText, metadataRoot, memoryRoot, capabilityHash, txHash: tx.hash });
-      setStatus("Agent launched on 0G. Verified proof is ready.");
+      setStatus("Agent launched on 0G. Activate compute now or pay later from Creator Console.");
     } catch (error) {
       setTxHash("");
       setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
@@ -156,16 +171,34 @@ export function LaunchAgentForm() {
         <div className="two-col">
           <label>
             Category
-            <select value={category} onChange={(event) => setCategory(event.target.value as AgentCategory)}>
-              {["chat", "research", "trading", "social", "game", "developer", "custom"].map((item) => <option key={item}>{item}</option>)}
+            <select value={category} onChange={(event) => changeCategory(event.target.value as AgentCategory)}>
+              {agentCategories.map((item) => <option key={item}>{item}</option>)}
             </select>
           </label>
           <label>Identity mode<input value="Mint new Agent ID during launch" readOnly /></label>
         </div>
+        <label>
+          0G Compute model
+          <select value={selectedModelId} onChange={(event) => setSelectedModelId(event.target.value)}>
+            {computeModelsByCategory[category].map((model) => <option value={model.id} key={model.id}>{model.label} · {model.tier}</option>)}
+          </select>
+        </label>
+        <div className="network-readiness-card compute-model-card">
+          <span className={selectedModel.teeRequired ? "status-badge success" : "status-badge pending"}>{selectedModel.modality}</span>
+          <strong>{selectedModel.label}</strong>
+          <p>{selectedModel.reason}</p>
+          <p>{activationQuote.label}: {activationQuote.deposit} 0G compute deposit + {activationQuote.protocolFee} 0G protocol activation fee.</p>
+        </div>
         <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
         <label>System prompt<textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} /></label>
-        <button className="primary-button" disabled={busy}>{busy ? "Launching..." : "Launch verified agent"}</button>
+        <button className="primary-button" disabled={!canLaunch}>{busy ? "Launching..." : "Launch verified agent"}</button>
         {status ? <p className="status-line">{status}</p> : null}
+        {launchedAgentId ? (
+          <div className="post-launch-actions">
+            <a className="primary-button" href={`/agents/${launchedAgentId}#creator-console`}>Activate compute now</a>
+            <a className="secondary-button" href="/portfolio">Pay later in Creator Console</a>
+          </div>
+        ) : null}
       </form>
       <aside className="glass-card launch-preview">
         <span className="section-kicker">Launch desk</span>
@@ -173,7 +206,7 @@ export function LaunchAgentForm() {
         <p>{description}</p>
         <AgentAvatar name={name || "New Agent"} category={category} size="xl" />
         <div className="launch-rail">
-          <PreviewStep index="01" title="Agent profile" detail="Name, category, pricing, and model behavior prepared for 0G Storage." value={verifiedProof.metadataRoot} />
+          <PreviewStep index="01" title="Agent profile" detail={`${selectedModel.label} selected for this agent.`} value={verifiedProof.metadataRoot} />
           <PreviewStep index="02" title="Persistent memory" detail="Initial memory package uploaded to 0G Storage." value={verifiedProof.memoryRoot} />
           <PreviewStep index="03" title="Agent ID" detail="Minted through the connected wallet before launch." value={verifiedProof.agentId ? `Agent ID #${verifiedProof.agentId}` : ""} />
           <PreviewStep index="04" title="0G Chain launch" detail="Confirmed wallet transaction registering the agent on-chain." value={verifiedProof.txHash || txHash} />

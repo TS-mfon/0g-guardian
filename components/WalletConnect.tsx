@@ -29,7 +29,11 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
         return;
       }
       setAddress(snapshot.address);
-      setBalance(Number(snapshot.balance).toLocaleString(undefined, { maximumFractionDigits: 4 }));
+      setBalance(snapshot.balance ? Number(snapshot.balance).toLocaleString(undefined, { maximumFractionDigits: 4 }) : "");
+      if (!snapshot.isCorrectNetwork) {
+        setStatus(`Switch to ${snapshot.selectedNetwork.label} to use contract actions.`);
+        return;
+      }
       if (!silent) setStatus(`Ready on ${getSelectedNetworkLabel()}.`);
     } catch (error) {
       if (!silent) setStatus(getUserMessage(error, "Wallet connection failed. Please retry."));
@@ -90,9 +94,8 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
   async function changeNetwork(value: ZeroGNetworkKey) {
     setSelectedNetworkKey(value);
     setNetwork(value);
-    setStatus("Switching 0G network...");
-    if (address || wantsWalletReconnect()) await connect();
-    else setStatus(`Network set to ${value === "mainnet" ? "0G Mainnet" : "0G Galileo"}.`);
+    setStatus(address || wantsWalletReconnect() ? "Network selected. Click switch/connect to use it." : `Network set to ${value === "mainnet" ? "0G Mainnet" : "0G Galileo"}.`);
+    if (address || wantsWalletReconnect()) void hydrateWallet(true);
   }
 
   if (compact) {
@@ -122,7 +125,7 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
           </select>
         </label>
         <button className="primary-button" type="button" onClick={connect} disabled={busy}>
-          {busy ? "Connecting..." : address ? "Reconnect wallet" : "Connect wallet"}
+          {busy ? "Connecting..." : address ? "Switch / refresh wallet" : "Connect wallet"}
         </button>
         <div className="wallet-readout">
           <span>{address ? `${address.slice(0, 8)}...${address.slice(-6)}` : "No wallet connected"}</span>

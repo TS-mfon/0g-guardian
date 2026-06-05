@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { ethers } from "ethers";
+import { AgentCategory } from "@shared/index";
+import { computeModelsByCategory, findComputeModel, getActivationQuote, getDefaultComputeModel } from "@/lib/compute-models";
 import { clientConfig } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { connectWallet, getCurrentWalletAddressSilently } from "@/lib/wallet";
@@ -15,12 +17,16 @@ function linkMessage(input: { agentId: string; creator: string }) {
   ].join("\n");
 }
 
-export function CreatorComputeKeyPanel({ agentId, creator }: { agentId: string; creator: string }) {
+export function CreatorComputeKeyPanel({ agentId, creator, category = "custom" }: { agentId: string; creator: string; category?: string }) {
   const [apiKey, setApiKey] = useState("");
   const [status, setStatus] = useState("Checking creator compute setup...");
   const [configured, setConfigured] = useState(false);
   const [busy, setBusy] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const normalizedCategory = (category in computeModelsByCategory ? category : "custom") as AgentCategory;
+  const [selectedModelId, setSelectedModelId] = useState(getDefaultComputeModel(normalizedCategory).id);
+  const selectedModel = findComputeModel(normalizedCategory, selectedModelId);
+  const activationQuote = getActivationQuote(selectedModel);
 
   async function refreshStatus() {
     const response = await fetch(`/api/agents/compute-key?agentId=${encodeURIComponent(agentId)}`);
@@ -66,16 +72,23 @@ export function CreatorComputeKeyPanel({ agentId, creator }: { agentId: string; 
       try {
         await broker.ledger.getLedger();
       } catch {
-        setStatus("Creating 0G Compute ledger. Sign the 3 0G deposit transaction.");
-        await broker.ledger.addLedger(3);
+        setStatus(`Creating 0G Compute ledger. Sign the ${activationQuote.deposit} 0G deposit transaction.`);
+        await broker.ledger.addLedger(Number(activationQuote.deposit));
       }
 
-      setStatus("Funding provider account. Sign the 1 0G transfer transaction.");
+      setStatus(`Funding model execution balance. Sign the ${activationQuote.deposit} 0G provider transfer transaction.`);
       try {
         await broker.inference.getAccount(providerAddress);
       } catch {
-        await broker.ledger.transferFund(providerAddress, "inference", ethers.parseEther("1"));
+        await broker.ledger.transferFund(providerAddress, "inference", ethers.parseEther(activationQuote.deposit));
       }
+
+      setStatus(`Paying ${activationQuote.protocolFee} 0G protocol activation fee...`);
+      const protocolTx = await signer.sendTransaction({
+        to: clientConfig.protocolFeeWallet,
+        value: ethers.parseEther(activationQuote.protocolFee)
+      });
+      await protocolTx.wait();
 
       setStatus("Acknowledging provider TEE signer...");
       await broker.inference.acknowledgeProviderSigner(providerAddress);
@@ -101,7 +114,7 @@ export function CreatorComputeKeyPanel({ agentId, creator }: { agentId: string; 
           signature,
           provider: `0G Direct Provider ${providerAddress}`,
           baseUrl: `${metadata.endpoint.replace(/\/$/, "")}/v1/proxy`,
-          model: metadata.model
+          model: selectedModel.id
         })
       });
       const body = await response.json().catch(() => null);
@@ -124,17 +137,23 @@ export function CreatorComputeKeyPanel({ agentId, creator }: { agentId: string; 
       <p>
         Your creator wallet funds the 0G Compute account used by this agent. Users only see whether the agent is ready for paid tasks.
       </p>
+      <label>
+        Compute model
+        <select value={selectedModelId} onChange={(event) => setSelectedModelId(event.target.value)} disabled={busy || configured}>
+          {computeModelsByCategory[normalizedCategory].map((model) => <option value={model.id} key={model.id}>{model.label} · {model.tier}</option>)}
+        </select>
+      </label>
       <div className="compute-route">
         <span>Provider</span>
         <strong>{clientConfig.directComputeProvider}</strong>
       </div>
       <div className="compute-route">
         <span>Model</span>
-        <strong>{clientConfig.computeModel}</strong>
+        <strong>{selectedModel.label}</strong>
       </div>
       <div className="compute-route">
-        <span>Creator payment</span>
-        <strong>3 0G ledger + 1 0G provider balance</strong>
+        <span>Creator activation</span>
+        <strong>{activationQuote.deposit} 0G compute + {activationQuote.protocolFee} 0G protocol fee</strong>
       </div>
       <button className="primary-button" disabled={busy}>
         {busy ? "Activating..." : configured ? "Refresh compute funding" : "Activate compute with 0G"}

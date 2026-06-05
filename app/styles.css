@@ -2254,6 +2254,61 @@ select {
   padding: 18px;
 }
 
+.compute-model-card,
+.post-launch-actions,
+.task-result-receipt,
+.task-answer-card,
+.task-proof-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.compute-model-card {
+  margin: -2px 0 4px;
+}
+
+.post-launch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px;
+}
+
+.task-result-receipt {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 18px;
+}
+
+.task-result-receipt h3 {
+  margin: 8px 0 0;
+}
+
+.task-answer-card {
+  padding: 16px;
+}
+
+.task-answer-card span {
+  color: #22d3ee;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.task-answer-card p {
+  margin-bottom: 0;
+  color: #ffffff;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.task-proof-card {
+  box-shadow: none;
+}
+
 @media (max-width: 920px) {
   .landing-economy-section,
   .creator-console-grid,

@@ -4,6 +4,8 @@ export interface AgentRunResult {
   response: string;
   provider: string;
   model: string;
+  usage?: unknown;
+  trace?: unknown;
 }
 
 export async function generateAgentProfile(input: { idea: string; category: string; model: string; apiKey?: string; baseUrl?: string }) {
@@ -67,6 +69,7 @@ async function call0GCompute(input: { apiKey?: string; baseUrl?: string; model: 
     },
     body: JSON.stringify({
       model: input.model,
+      verify_tee: true,
       messages: [
         { role: "system", content: "You are a concise AI agent running through 0G Compute. Return useful output only." },
         { role: "user", content: input.prompt }

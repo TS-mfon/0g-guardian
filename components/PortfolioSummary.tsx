@@ -6,7 +6,7 @@ import { ethers } from "ethers";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { AgentView, TaskView } from "@/lib/agentfun";
 import { getUserMessage } from "@/lib/errors";
-import { agentFunCoreContract, getConnectedWallet, wantsWalletReconnect } from "@/lib/wallet";
+import { agentFunCoreContract, agentFunCoreReadContract, getWalletSnapshotSilently } from "@/lib/wallet";
 
 const pendingStatuses = new Set([1, 2]);
 
@@ -18,11 +18,11 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
   const [busy, setBusy] = useState("");
 
   async function refresh() {
-    const snapshot = await getConnectedWallet();
+    const snapshot = await getWalletSnapshotSilently();
     setAddress(snapshot.address);
     if (!snapshot.address) return;
     try {
-      const contract = await agentFunCoreContract();
+      const contract = await agentFunCoreReadContract();
       const [revenue, positions] = await Promise.all([
         contract.claimable(snapshot.address),
         Promise.all(initialAgents.map(async (agent) => [agent.id, (await contract.keyBalance(BigInt(agent.id), snapshot.address)).toString()] as const))
@@ -36,7 +36,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
   }
 
   useEffect(() => {
-    if (wantsWalletReconnect()) void refresh();
+    void refresh();
     const onWallet = () => void refresh();
     const ethereum = window.ethereum as (typeof window.ethereum & {
       on?: (event: string, handler: (...args: any[]) => void) => void;
@@ -90,7 +90,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
     <>
       <section className="portfolio-grid portfolio-command-grid">
         <div><span>Wallet</span><strong>{walletLabel}</strong><p>Management actions unlock after connecting the creator wallet.</p></div>
-        <div><span>Agents launched</span><strong>{address ? createdAgents.length : "Connect"}</strong><p>Filtered from confirmed AgentLaunched records.</p></div>
+        <div><span>Agents launched</span><strong>{address ? createdAgents.length : "Connect wallet"}</strong><p>Filtered from confirmed AgentLaunched records.</p></div>
         <div><span>Keys held</span><strong>{address ? heldAgents.length : "Connect"}</strong><p>Your key positions are read from `keyBalance`.</p></div>
         <div><span>Claimable revenue</span><strong>{claimable ? `${claimable} 0G` : address ? "0.0 0G" : "Connect"}</strong><p>Creator and protocol revenue settles through `claimable`.</p></div>
       </section>
@@ -102,7 +102,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
               <span className="section-kicker">Creator console</span>
               <h2>Agents launched</h2>
             </div>
-            <button className="secondary-button" onClick={claimRevenue} disabled={!address || !!busy}>
+            <button className="secondary-button" onClick={claimRevenue} disabled={!address || !!busy || !Number(claimable)}>
               {busy === "claim" ? "Claiming..." : "Claim revenue"}
             </button>
           </div>
@@ -118,7 +118,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
                   <p>Readiness {agent.readinessScore}%. Market cap {agent.marketCap} 0G. {agent.taskCount} paid tasks.</p>
                   <div className="managed-actions">
                     <Link className="proof-link" href={`/agents/${agent.id}`}>Manage</Link>
-                    <Link className="proof-link" href={`/agents/${agent.id}#creator-console`}>Activate compute</Link>
+                    <Link className="primary-button" href={`/agents/${agent.id}#creator-console`}>Activate compute</Link>
                     <button className="secondary-button" disabled={!!busy} onClick={() => setActive(agent.id, !agent.active)}>
                       {busy === `active-${agent.id}` ? "Updating..." : agent.active ? "Pause" : "Activate"}
                     </button>

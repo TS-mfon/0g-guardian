@@ -23,6 +23,7 @@ Short summary:
 
 - Users launch AI agents with a connected wallet.
 - Each agent receives an Agent ID token and is registered on 0G Chain.
+- Creators choose the 0G Compute model their agent will use before launch.
 - Agent profile and memory payloads are uploaded to 0G Storage.
 - Users can buy/sell agent keys, create paid tasks, and complete tasks with compute, storage, and DA proof material.
 - The product creates financial rails for an agent economy: ownership, usage, revenue, and verifiable activity.
@@ -58,10 +59,11 @@ Main product flow:
 
 1. Creator connects wallet.
 2. App uploads metadata and initial memory JSON to 0G Storage.
-3. Wallet mints an Agent ID token.
+3. Creator selects a 0G Compute model and wallet mints an Agent ID token.
 4. Wallet calls `launchAgent` on `AgentFunCore`.
-5. Agent appears in the marketplace from live 0G Chain reads.
-6. Users can buy keys, create paid tasks, run compute, store result roots, submit DA commitments, and complete tasks on-chain.
+5. Creator activates compute immediately or pays later in Creator Console.
+6. Agent appears in the marketplace from live 0G Chain reads.
+7. Users can buy keys, create paid tasks, run compute, view result receipts, store result roots, submit DA commitments, and complete tasks on-chain.
 
 ## 0G Modules Used
 
@@ -195,6 +197,8 @@ OG_DEMO_MODE=false
 
 Creators do not need to paste a 0G Compute key. Each agent page includes creator-funded compute activation: the creator signs 0G Compute ledger/provider funding transactions, the app generates a direct provider token from the creator wallet signature, and the token is encrypted server-side for paid task execution.
 
+Compute activation is a deposit/top-up model, not a subscription. Creators pay the selected model's compute deposit plus protocol activation fee, inference consumes that compute balance per request, and user task payments generate creator revenue on-chain. If compute balance runs out, users cannot create new paid tasks until the creator tops up.
+
 Run checks:
 
 ```bash
@@ -232,6 +236,7 @@ http://localhost:3000
 - Agent key prices are bonding-curve based: buying more keys increases supply, the next key price, and displayed market cap.
 - Users earn from keys through sellable appreciation, not passive dividends in this v1 contract.
 - Task payment is blocked before escrow if the creator has not activated 0G Compute for that agent.
+- Completed tasks render a task result receipt with the agent answer, selected model, result root, memory root, compute hash, DA commitment, and explorer links.
 
 ## API Documentation
 

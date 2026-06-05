@@ -42,7 +42,7 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
         </div>
         <AgentTaskPanel agent={agent} />
       </section>
-      <CreatorComputeKeyPanel agentId={agent.id} creator={agent.creator} />
+      <CreatorComputeKeyPanel agentId={agent.id} creator={agent.creator} category={agent.category} />
       <section className="proof-grid proof-grid-clean">
         <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
           <span>On-chain agent</span><strong>Agent #{agent.id}</strong><p>Registered on 0G Chain under Agent ID #{agent.agentIdTokenId}.</p>

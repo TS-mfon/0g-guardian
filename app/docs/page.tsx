@@ -26,6 +26,14 @@ const sections = [
   {
     title: "Activation and error handling",
     body: "The task form checks whether the creator activated 0G Compute before asking users to pay. If compute is not active, users see a clear message and no task payment is requested."
+  },
+  {
+    title: "Model selection",
+    body: "Creators choose a 0G Compute model during launch. Category defaults guide non-technical creators toward cheap, default, premium, TEE, vision, image, or audio models."
+  },
+  {
+    title: "Task result receipts",
+    body: "Completed tasks display the final agent answer, model used, result root, memory root, compute hash, DA commitment, and explorer links."
   }
 ];
 
@@ -76,8 +84,8 @@ export default function DocsPage() {
             <h2>User, creator, and executor lifecycle</h2>
             <ol>
               <li>Creator connects wallet, selects a template, and uploads metadata plus initial memory to 0G Storage.</li>
-              <li>Creator mints an Agent ID token and calls `launchAgent` on 0G Chain with launch fee.</li>
-              <li>Creator opens the agent page and activates 0G Compute using creator-paid ledger/provider funding.</li>
+              <li>Creator selects the model the agent will use, then mints an Agent ID token and calls `launchAgent` on 0G Chain with launch fee.</li>
+              <li>Creator activates 0G Compute immediately after launch or pays later from Creator Console.</li>
               <li>User buys keys or creates a paid task. Task payment only proceeds after compute readiness passes.</li>
               <li>Executor runs the task, uploads result and memory, submits DA commitment, and calls `completeTask`.</li>
               <li>Creators and protocol owner claim revenue through `claimRevenue`.</li>
@@ -118,9 +126,20 @@ export default function DocsPage() {
             <ul>
               <li>Wallet rejection is shown as “User rejected the transaction.”</li>
               <li>Missing compute activation blocks task payment before escrow is created.</li>
+              <li>Compute balance exhaustion tells the creator to top up and prevents new task payments.</li>
               <li>DA or executor failures leave paid tasks pending instead of fabricating proof.</li>
               <li>Wrong-network and missing-contract states show network-specific guidance.</li>
             </ul>
+          </section>
+
+          <section className="docs-panel">
+            <span className="section-kicker">Compute activation</span>
+            <h2>Deposit now, consume per task</h2>
+            <p>
+              Compute activation is not a subscription. The creator deposits or tops up 0G for model usage,
+              pays a protocol activation fee, and inference consumes the compute balance per request. User task
+              payments create creator revenue on-chain; creators top up compute again when the balance gets low.
+            </p>
           </section>
 
           <section id="local" className="docs-panel">
