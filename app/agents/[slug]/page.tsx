@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AgentActions } from "@/components/AgentActions";
+import { AgentAvatar } from "@/components/AgentAvatar";
 import { AgentTaskPanel } from "@/components/AgentTaskPanel";
 import { CreatorComputeKeyPanel } from "@/components/CreatorComputeKeyPanel";
 import { SiteNav } from "@/components/SiteNav";
@@ -19,7 +20,7 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
     <main>
       <SiteNav />
       <section className="agent-profile-hero">
-        <div className="agent-orb xl">{agent.symbol.slice(0, 2)}</div>
+        <AgentAvatar name={agent.name} category={agent.category} size="xl" />
         <div>
           <span className="section-kicker">Agent #{agent.id} · Agent ID {agent.agentIdTokenId}</span>
           <h1>{agent.name} <em>${agent.symbol}</em></h1>
@@ -32,10 +33,12 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
           <div className="metric-grid">
             <div><span>Keys</span><strong>{agent.keySupply}</strong></div>
             <div><span>Reserve</span><strong>{agent.reserve} 0G</strong></div>
+            <div><span>Key price</span><strong>{agent.currentKeyPrice} 0G</strong></div>
+            <div><span>Market cap</span><strong>{agent.marketCap} 0G</strong></div>
             <div><span>Tasks</span><strong>{agent.taskCount}</strong></div>
             <div><span>Revenue</span><strong>{agent.totalRevenue} 0G</strong></div>
           </div>
-          <AgentActions agentId={agent.id} />
+          <AgentActions agent={agent} />
         </div>
         <AgentTaskPanel agent={agent} />
       </section>

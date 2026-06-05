@@ -21,6 +21,11 @@ export const ZERO_G_GALILEO = {
 export const agentFunCoreAbi = [
   "function launchFee() view returns (uint256)",
   "function minTaskFee() view returns (uint256)",
+  "function owner() view returns (address)",
+  "function transferOwnership(address newOwner)",
+  "function protocolFeeBps() view returns (uint256)",
+  "function creatorFeeBps() view returns (uint256)",
+  "function BPS() view returns (uint256)",
   "function launchesPaused() view returns (bool)",
   "function tasksPaused() view returns (bool)",
   "function marketPaused() view returns (bool)",

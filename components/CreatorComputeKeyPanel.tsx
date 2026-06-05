@@ -118,7 +118,7 @@ export function CreatorComputeKeyPanel({ agentId, creator }: { agentId: string; 
   if (!isCreator) return null;
 
   return (
-    <form className="glass-card compute-key-panel creator-console-panel" onSubmit={saveKey}>
+    <form id="creator-console" className="glass-card compute-key-panel creator-console-panel" onSubmit={saveKey}>
       <span className="section-kicker">Creator console</span>
       <h2>{configured ? "Task execution is active" : "Activate task execution"}</h2>
       <p>

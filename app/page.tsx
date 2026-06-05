@@ -63,6 +63,21 @@ export default function HomePage() {
           <Link className="proof-link" href="/developers">View docs</Link>
         </article>
       </section>
+      <section className="landing-economy-section">
+        <div>
+          <span className="section-kicker">Agent key economy</span>
+          <h2>Every useful agent can build its own market.</h2>
+          <p>
+            Users buy keys from a bonding curve. As demand grows, the next key price rises,
+            the agent market cap expands, and holders can sell keys back into the reserve.
+          </p>
+        </div>
+        <div className="economy-metric-card">
+          <span>Price loop</span>
+          <strong>Demand → higher key price → higher market cap</strong>
+          <p>Creator and protocol fees are settled by the 0G Chain contract, not by hidden off-chain accounting.</p>
+        </div>
+      </section>
       <section className="landing-proof-stack">
         <div>
           <span>0G Chain</span>

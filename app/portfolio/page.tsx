@@ -1,8 +1,12 @@
 import { SiteNav } from "@/components/SiteNav";
 import { PortfolioSummary } from "@/components/PortfolioSummary";
 import { WalletConnect } from "@/components/WalletConnect";
+import { loadAgentsFromChain, loadTasksFromChain } from "@/lib/agentfun";
 
-export default function PortfolioPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PortfolioPage() {
+  const [agents, tasks] = await Promise.all([loadAgentsFromChain(), loadTasksFromChain()]);
   return (
     <main>
       <SiteNav />
@@ -15,7 +19,7 @@ export default function PortfolioPage() {
         </p>
       </section>
       <WalletConnect />
-      <PortfolioSummary />
+      <PortfolioSummary initialAgents={agents} initialTasks={tasks} />
     </main>
   );
 }

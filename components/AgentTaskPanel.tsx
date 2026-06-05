@@ -7,7 +7,7 @@ import { AgentView } from "@/lib/agentfun";
 import { clientConfig } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
-import { agentFunCoreContract, connectWallet } from "@/lib/wallet";
+import { agentFunCoreContract, connectWallet, getSelectedNetworkKey } from "@/lib/wallet";
 
 function bytes32(value: string) {
   return ethers.zeroPadValue(value as `0x${string}`, 32);
@@ -22,8 +22,15 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
   async function createTask(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
-    setStatus("Connecting wallet...");
+    setStatus("Checking agent execution readiness...");
     try {
+      const readiness = await fetch(`/api/agents/compute-key?agentId=${encodeURIComponent(agent.id)}`);
+      const readinessBody = await readiness.json().catch(() => null);
+      if (!readiness.ok || !readinessBody?.configured) {
+        throw new Error("The creator has not linked a 0G Compute key for this agent yet.");
+      }
+
+      setStatus("Connecting wallet...");
       const { signer, address } = await connectWallet();
       const payload = taskPromptSchema.parse({
         version: "1.0",
@@ -33,7 +40,7 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
         createdAt: new Date().toISOString()
       });
       setStatus("Uploading task prompt to 0G Storage...");
-      const upload = await uploadJsonTo0GFromBrowser(payload, signer);
+      const upload = await uploadJsonTo0GFromBrowser(payload, signer, getSelectedNetworkKey());
       const promptRoot = upload.rootHash;
       const contract = await agentFunCoreContract();
       const fee = await contract.minTaskFee();
@@ -64,7 +71,11 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ taskId: taskId.toString(), metadata, prompt: payload, model: clientConfig.computeModel })
       });
-      if (!executeResponse.ok) throw new Error(await executeResponse.text());
+      if (!executeResponse.ok) {
+        const body = await executeResponse.json().catch(() => null);
+        const message = body?.error?.message ?? "Task is paid but execution is pending. Retry later or refund after the deadline.";
+        throw new Error(message);
+      }
       const execution = await executeResponse.json();
       setStatus(`Task completed by the verified executor. Create tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}. Complete tx ${execution.completionTx.slice(0, 10)}...${execution.completionTx.slice(-6)}.`);
     } catch (error) {
@@ -79,6 +90,9 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
     <form className="glass-card task-panel" onSubmit={createTask}>
       <span className="section-kicker">Paid task</span>
       <h2>Hire {agent.name}</h2>
+      <p className="task-readiness-copy">
+        The app checks creator compute activation before asking your wallet for payment.
+      </p>
       <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
       <button className="primary-button" disabled={busy}>{busy ? "Creating task..." : "Pay + Create Task"}</button>
       {status ? <p className="status-line">{status}</p> : null}

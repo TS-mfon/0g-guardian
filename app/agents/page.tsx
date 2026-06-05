@@ -20,6 +20,7 @@ export default async function AgentsPage() {
           <div><span>Live agents</span><strong>{stats.liveAgents}</strong></div>
           <div><span>Active</span><strong>{stats.activeAgents}</strong></div>
           <div><span>Paid tasks</span><strong>{stats.totalTasks}</strong></div>
+          <div><span>Market cap</span><strong>{stats.totalMarketCap.toFixed(4)} 0G</strong></div>
           <div><span>Creator revenue</span><strong>{stats.totalRevenue.toFixed(4)} 0G</strong></div>
         </div>
       </section>

@@ -94,22 +94,36 @@ The task completion flow creates DA commitment payloads through `/api/da/submit`
 
 ## 0G Integration Proof
 
-0G mainnet contract:
+0G mainnet contracts:
 
 ```text
-AgentFunCore: 0xc90197fBAe660e0f4b091b4f5E0215fEE0336A67
-Agent ID adapter: 0x67E043731d26A7D27C00Bc3389F01162Cb18007d
+AgentFunCore: 0x4a38251e67229438235B0999cEb086Cb2987b55C
+Agent ID:     0xD64faeE84313F7564E7dc7655088c3b4A4263CfB
+Protocol fee wallet: 0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E
+```
+
+0G Galileo testnet contracts:
+
+```text
+AgentFunCore: 0x45119A32ca6C4d67424401dA92Abe4EC6c83f8Ce
+Agent ID:     0xB0DBC829dF852Ea96C14A7D06cE8D773B1F8892b
 ```
 
 Explorer links:
 
-- AgentFunCore: https://chainscan.0g.ai/address/0xc90197fBAe660e0f4b091b4f5E0215fEE0336A67
-- Agent ID adapter: https://chainscan.0g.ai/address/0x67E043731d26A7D27C00Bc3389F01162Cb18007d
+- AgentFunCore: https://chainscan.0g.ai/address/0x4a38251e67229438235B0999cEb086Cb2987b55C
+- Agent ID: https://chainscan.0g.ai/address/0xD64faeE84313F7564E7dc7655088c3b4A4263CfB
+- Galileo AgentFunCore: https://chainscan-galileo.0g.ai/address/0x45119A32ca6C4d67424401dA92Abe4EC6c83f8Ce
+- Galileo Agent ID: https://chainscan-galileo.0g.ai/address/0xB0DBC829dF852Ea96C14A7D06cE8D773B1F8892b
 
 Deployment transactions:
 
-- AgentFunCore deploy tx: `0xc5ec73221739f04b11b8cf7967dba9cd223672665858cd2ea772067a513220f2`
-- Agent ID deploy tx: `0xb1744723eff88c2f530b2752766c1994ab57de31039e3d6ca8bab6f240db8845`
+- Mainnet AgentFunCore deploy tx: `0xdb45e8aad60494653b4a7ef094e831d094e1bf50f0520bd3629335ddcc571381`
+- Mainnet Agent ID deploy tx: `0x02fb095e1f766f5b17906b098fd5aa966110495a6480d84840cf3c4f19a0e05a`
+- Galileo AgentFunCore deploy tx: `0x3d59d64358c58cf76368181ca89239a87849c36fa35bf161236a7f86c0c8ccdf`
+- Galileo Agent ID deploy tx: `0x5a4a7260f93f04ddd0e5055acc742b4e9479aefbe7068ba2ea86a80480258a26`
+- Mainnet ownership transfer to protocol fee wallet: `0x24fc9165609bef5f6acdc29e110b825b04f933fa9b1275ea253d273dff8d82f0`
+- Galileo ownership transfer to protocol fee wallet: `0xabdb7bcdadfe0600e09042ee07fd606284a10375446b1a890392ea4f96830c48`
 
 Seeded live agents:
 
@@ -152,8 +166,13 @@ npm install
 Create `.env.local`:
 
 ```bash
-NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS=0xc90197fBAe660e0f4b091b4f5E0215fEE0336A67
-NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS=0x67E043731d26A7D27C00Bc3389F01162Cb18007d
+NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS=0x4a38251e67229438235B0999cEb086Cb2987b55C
+NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS=0xD64faeE84313F7564E7dc7655088c3b4A4263CfB
+NEXT_PUBLIC_MAINNET_AGENT_FUN_CORE_ADDRESS=0x4a38251e67229438235B0999cEb086Cb2987b55C
+NEXT_PUBLIC_MAINNET_AGENT_ID_CONTRACT_ADDRESS=0xD64faeE84313F7564E7dc7655088c3b4A4263CfB
+NEXT_PUBLIC_TESTNET_AGENT_FUN_CORE_ADDRESS=0x45119A32ca6C4d67424401dA92Abe4EC6c83f8Ce
+NEXT_PUBLIC_TESTNET_AGENT_ID_CONTRACT_ADDRESS=0xB0DBC829dF852Ea96C14A7D06cE8D773B1F8892b
+NEXT_PUBLIC_PROTOCOL_FEE_WALLET=0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E
 NEXT_PUBLIC_0G_CHAIN_ID=16661
 NEXT_PUBLIC_0G_CHAIN_ID_HEX=0x4115
 NEXT_PUBLIC_0G_RPC_URL=https://rpc.ankr.com/0g_mainnet_evm
@@ -209,6 +228,10 @@ http://localhost:3000
 - Production task execution requires `OG_COMPUTE_KEY`, `SERVER_WALLET_PRIVATE_KEY` or `EXECUTOR_PRIVATE_KEY`, and `OG_DA_GATEWAY_URL`. Without those, tasks remain pending instead of showing fake completed proofs.
 - The five seeded agents can be viewed without a wallet on `/agents`.
 - Creating new agents requires a wallet signature.
+- `/portfolio` includes a creator console that filters launched agents by the connected creator wallet.
+- Agent key prices are bonding-curve based: buying more keys increases supply, the next key price, and displayed market cap.
+- Users earn from keys through sellable appreciation, not passive dividends in this v1 contract.
+- Task payment is blocked before escrow if the creator has not activated 0G Compute for that agent.
 
 ## API Documentation
 

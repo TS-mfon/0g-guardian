@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AgentAvatar } from "@/components/AgentAvatar";
 import { AgentView, loadAgentsFromChain } from "@/lib/agentfun";
 import { genesisTemplates } from "@/lib/agent-templates";
 import { zeroGNetworks } from "@/lib/config";
@@ -30,7 +31,7 @@ function LiveAgentTile({ agent }: { agent: AgentView }) {
   return (
     <Link className="agent-tile live-agent-tile" href={`/agents/${agent.id}`}>
       <div className="agent-tile-top">
-        <div className="agent-orb">{agent.symbol.slice(0, 2)}</div>
+        <AgentAvatar name={agent.name} category={agent.category} size="sm" />
         <span className={agent.active ? "status-badge success" : "status-badge danger"}>{agent.active ? "Live" : "Paused"}</span>
       </div>
       <span>{agent.category} · Agent #{agent.id}</span>
@@ -38,7 +39,7 @@ function LiveAgentTile({ agent }: { agent: AgentView }) {
       <p>Agent ID {agent.agentIdTokenId}. {agent.taskCount} paid tasks. {agent.keySupply} keys issued.</p>
       <div className="agent-tile-metrics">
         <strong>{agent.totalRevenue} 0G revenue</strong>
-        <em>{agent.reserve} 0G reserve</em>
+        <em>{agent.marketCap} 0G market cap</em>
       </div>
       <span className="chain-link-copy">View verified agent</span>
     </Link>
@@ -51,7 +52,7 @@ function GenesisLaunchTemplates() {
     <>
       {genesisTemplates.map((agent) => (
         <Link className="agent-tile template" href="/launch" key={agent.name}>
-          <div className="agent-orb">{agent.symbol.slice(0, 2)}</div>
+          <AgentAvatar name={agent.name} category={agent.category} size="sm" />
           <span>Launch template · not on-chain yet</span>
           <h3>{agent.name}</h3>
           <p>{agent.description}</p>

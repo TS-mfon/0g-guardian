@@ -37,6 +37,11 @@ contract AgentFunCoreTest is Test {
         assertEq(core.getAllAgentIds().length, 1);
     }
 
+    function testLaunchFeeAccruesToProtocolOwner() public {
+        _launch();
+        assertEq(core.claimable(address(this)), 0.001 ether);
+    }
+
     function testRejectDuplicateAgentId() public {
         _launch();
         vm.deal(user, 10 ether);
@@ -66,6 +71,20 @@ contract AgentFunCoreTest is Test {
         vm.prank(user);
         core.sellKeys(agentId, 1, sellPrice);
         assertEq(core.keyBalance(agentId, user), 2);
+    }
+
+    function testKeyMarketFeesAndPricePump() public {
+        uint256 agentId = _launch();
+        uint256 firstKey = core.getBuyPrice(agentId, 1);
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        core.buyKeys{value: firstKey}(agentId, 1);
+
+        uint256 creatorFee = (firstKey * core.creatorFeeBps()) / core.BPS();
+        uint256 protocolFee = (firstKey * core.protocolFeeBps()) / core.BPS();
+        assertEq(core.claimable(creator), creatorFee);
+        assertEq(core.claimable(address(this)), 0.001 ether + protocolFee);
+        assertTrue(core.getBuyPrice(agentId, 1) > firstKey);
     }
 
     function _createTask(uint256 agentId) internal returns (uint256 taskId) {

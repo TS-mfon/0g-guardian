@@ -1935,3 +1935,361 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Final production polish: spacing, docs, avatars, creator console, and readable controls. */
+.landing-clean {
+  padding-top: 88px !important;
+  padding-bottom: 72px !important;
+  gap: 44px !important;
+}
+
+.landing-clean .hero-copy {
+  display: grid;
+  align-content: center;
+  gap: 18px;
+}
+
+.landing-clean .hero-copy h1 {
+  margin-bottom: 6px !important;
+}
+
+.landing-clean .hero-actions {
+  margin-top: 10px;
+}
+
+.command-visual-v2 {
+  display: grid;
+  gap: 18px;
+}
+
+.product-flow-band {
+  gap: 22px !important;
+  margin-top: 32px !important;
+  margin-bottom: 34px !important;
+}
+
+.product-flow-band article {
+  padding: 28px !important;
+}
+
+.landing-economy-section {
+  max-width: 1180px;
+  margin: 34px auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  gap: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(168, 85, 247, 0.08)), rgba(19, 19, 24, 0.84);
+  padding: 34px;
+  box-shadow: 0 30px 110px rgba(0, 0, 0, 0.32);
+}
+
+.landing-economy-section h2,
+.docs-panel h2,
+.creator-console-main h2,
+.creator-console-side h2 {
+  margin: 10px 0;
+  letter-spacing: 0;
+}
+
+.landing-economy-section p,
+.economy-metric-card p,
+.docs-panel p,
+.empty-copy,
+.task-readiness-copy {
+  color: rgba(248, 251, 255, 0.72);
+  line-height: 1.7;
+}
+
+.economy-metric-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 24px;
+}
+
+.economy-metric-card span,
+.key-market-panel span,
+.managed-agent-card span,
+.pending-task-list span {
+  color: #22d3ee;
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.economy-metric-card strong {
+  display: block;
+  margin: 10px 0;
+  color: #ffffff;
+  font-size: 24px;
+}
+
+select,
+select option,
+select optgroup {
+  background: #131318 !important;
+  color: #ffffff !important;
+}
+
+select {
+  color-scheme: dark;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #22d3ee 50%),
+    linear-gradient(135deg, #22d3ee 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 18px) 55%,
+    calc(100% - 12px) 55% !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-repeat: no-repeat !important;
+  padding-right: 42px !important;
+}
+
+.agent-avatar {
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: #131318;
+  box-shadow: 0 18px 50px rgba(99, 102, 241, 0.22);
+}
+
+.agent-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.agent-avatar.sm {
+  width: 62px;
+  height: 62px;
+}
+
+.agent-avatar.md {
+  width: 88px;
+  height: 88px;
+}
+
+.agent-avatar.xl {
+  width: 132px;
+  height: 132px;
+  border-radius: 24px;
+}
+
+.agent-profile-hero .agent-avatar.xl {
+  width: 148px;
+  height: 148px;
+}
+
+.key-market-panel {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.key-market-panel div,
+.creator-console-main,
+.creator-console-side,
+.docs-panel,
+.docs-sidebar {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.key-market-panel div {
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.key-market-panel strong {
+  display: block;
+  margin-top: 6px;
+  color: #ffffff;
+}
+
+.creator-console-grid {
+  max-width: 1180px;
+  margin: 24px auto 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 22px;
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.managed-agent-list {
+  display: grid;
+  gap: 14px;
+}
+
+.managed-agent-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 14px;
+}
+
+.managed-agent-card h3 {
+  margin: 6px 0;
+}
+
+.managed-agent-card em {
+  color: #a855f7;
+  font-style: normal;
+}
+
+.managed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.checklist {
+  padding-left: 18px;
+  color: rgba(248, 251, 255, 0.78);
+  line-height: 1.8;
+}
+
+.pending-task-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pending-task-list a,
+.pending-task-list p {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 12px;
+}
+
+.portfolio-status {
+  max-width: 1180px;
+  margin: 18px auto 0;
+}
+
+.docs-layout {
+  max-width: 1180px;
+  margin: 26px auto 0;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.docs-sidebar {
+  position: sticky;
+  top: 104px;
+  display: grid;
+  gap: 8px;
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.docs-sidebar a {
+  border-radius: 12px;
+  color: rgba(248, 251, 255, 0.78);
+  padding: 10px 12px;
+}
+
+.docs-sidebar a:hover {
+  background: rgba(99, 102, 241, 0.16);
+  color: #ffffff;
+}
+
+.docs-content {
+  display: grid;
+  gap: 22px;
+}
+
+.docs-panel {
+  border-radius: 20px;
+  padding: 28px;
+}
+
+.docs-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.docs-card-grid article {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 18px;
+}
+
+.docs-panel li {
+  margin: 10px 0;
+  color: rgba(248, 251, 255, 0.78);
+  line-height: 1.65;
+}
+
+.docs-panel pre {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: #0b0b10;
+  padding: 18px;
+}
+
+@media (max-width: 920px) {
+  .landing-economy-section,
+  .creator-console-grid,
+  .docs-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .docs-sidebar {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .key-market-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .landing-clean {
+    padding-top: 48px !important;
+    padding-bottom: 44px !important;
+  }
+
+  .landing-economy-section,
+  .docs-panel,
+  .product-flow-band article {
+    padding: 20px !important;
+  }
+
+  .docs-card-grid,
+  .docs-sidebar,
+  .key-market-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .managed-agent-card {
+    grid-template-columns: 1fr;
+  }
+}

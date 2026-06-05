@@ -18,6 +18,21 @@ export interface AgentView {
   totalRevenue: string;
   keySupply: string;
   reserve: string;
+  currentKeyPrice: string;
+  sellQuote: string;
+  marketCap: string;
+  readinessScore: number;
+}
+
+export interface TaskView {
+  id: string;
+  agentId: string;
+  requester: string;
+  executor: string;
+  fee: string;
+  status: number;
+  createdAt: string;
+  deadline: string;
 }
 
 export function readProvider() {
@@ -43,6 +58,16 @@ export async function loadAgentsFromChain(): Promise<AgentView[]> {
       const agent = await contract.getAgent(id);
       const keySupply = await contract.keySupply(id);
       const reserve = await contract.agentReserve(id);
+      const currentKeyPrice = await contract.getBuyPrice(id, 1n);
+      const sellQuote = keySupply > 0n ? await contract.getSellPrice(id, 1n) : 0n;
+      const marketCap = currentKeyPrice * keySupply;
+      const readinessScore = [
+        agent.active,
+        agent.metadataRoot !== ethers.ZeroHash,
+        agent.memoryRoot !== ethers.ZeroHash,
+        agent.capabilityHash !== ethers.ZeroHash,
+        agent.taskCount > 0n
+      ].filter(Boolean).length * 20;
       return {
         id: agent.id.toString(),
         creator: agent.creator,
@@ -58,7 +83,11 @@ export async function loadAgentsFromChain(): Promise<AgentView[]> {
         taskCount: agent.taskCount.toString(),
         totalRevenue: ethers.formatEther(agent.totalRevenue),
         keySupply: keySupply.toString(),
-        reserve: ethers.formatEther(reserve)
+        reserve: ethers.formatEther(reserve),
+        currentKeyPrice: ethers.formatEther(currentKeyPrice),
+        sellQuote: ethers.formatEther(sellQuote),
+        marketCap: ethers.formatEther(marketCap),
+        readinessScore
       } satisfies AgentView;
     }));
     return agents.reverse();
@@ -68,11 +97,42 @@ export async function loadAgentsFromChain(): Promise<AgentView[]> {
   }
 }
 
+export async function loadTasksFromChain(): Promise<TaskView[]> {
+  const contract = readAgentFunContract();
+  if (!contract) return [];
+  try {
+    let ids: bigint[];
+    try {
+      ids = await contract.getTaskIds(0, 100);
+    } catch {
+      ids = await contract.getAllTaskIds();
+    }
+    const tasks = await Promise.all(ids.map(async (id) => {
+      const task = await contract.getTask(id);
+      return {
+        id: task.id.toString(),
+        agentId: task.agentId.toString(),
+        requester: task.requester,
+        executor: task.executor,
+        fee: ethers.formatEther(task.fee),
+        status: Number(task.status),
+        createdAt: task.createdAt.toString(),
+        deadline: task.deadline.toString()
+      } satisfies TaskView;
+    }));
+    return tasks.reverse();
+  } catch (error) {
+    console.warn("Unable to load Agent.fun tasks from 0G Chain", error);
+    return [];
+  }
+}
+
 export function getAgentMarketStats(agents: AgentView[]) {
   return {
     liveAgents: agents.length,
     activeAgents: agents.filter((agent) => agent.active).length,
     totalTasks: agents.reduce((sum, agent) => sum + Number(agent.taskCount), 0),
-    totalRevenue: agents.reduce((sum, agent) => sum + Number(agent.totalRevenue), 0)
+    totalRevenue: agents.reduce((sum, agent) => sum + Number(agent.totalRevenue), 0),
+    totalMarketCap: agents.reduce((sum, agent) => sum + Number(agent.marketCap), 0)
   };
 }

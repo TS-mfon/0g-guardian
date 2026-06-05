@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import { AgentCategory, agentMetadataSchema, agentMemorySchema } from "@shared/index";
+import { AgentAvatar } from "@/components/AgentAvatar";
 import { genesisTemplates } from "@/lib/agent-templates";
 import { clientConfig, getZeroGNetwork, ZeroGNetworkKey } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
@@ -170,7 +171,7 @@ export function LaunchAgentForm() {
         <span className="section-kicker">Launch desk</span>
         <h2>{name || "New Agent"} <em>${symbol || "AGENT"}</em></h2>
         <p>{description}</p>
-        <div className="agent-orb">{symbol.slice(0, 2).toUpperCase()}</div>
+        <AgentAvatar name={name || "New Agent"} category={category} size="xl" />
         <div className="launch-rail">
           <PreviewStep index="01" title="Agent profile" detail="Name, category, pricing, and model behavior prepared for 0G Storage." value={verifiedProof.metadataRoot} />
           <PreviewStep index="02" title="Persistent memory" detail="Initial memory package uploaded to 0G Storage." value={verifiedProof.memoryRoot} />
