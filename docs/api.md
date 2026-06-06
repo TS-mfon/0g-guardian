@@ -1,175 +1,60 @@
-# Backend API Documentation
+# Agent.fun Runtime API
 
-Agent.fun is primarily wallet and SDK driven. The app uses small Next.js API routes for compute, storage, and DA workflows.
+All routes use explicit `mainnet` or `testnet` network selection. They do not silently fall back across networks.
 
-## POST `/api/storage/upload-json`
+## `GET /api/readiness?network=<network>`
 
-Uploads a JSON payload to 0G Storage using the server wallet configured in `SERVER_WALLET_PRIVATE_KEY`.
+Checks selected-network RPC, AgentFunCoreV2 bytecode, Agent ID bytecode, and 0G Storage indexer availability.
+
+## `GET /api/models?network=<network>`
+
+Returns live models available on the selected network.
+
+- Mainnet source: 0G Router `/v1/models`
+- Galileo source: `createZGComputeNetworkReadOnlyBroker().inference.listServiceWithDetail()`
+
+## `POST /api/task-quote`
+
+Request:
+
+```json
+{ "network": "mainnet", "model": "deepseek-v4-flash" }
+```
+
+Returns a live maximum compute budget based on current input/output prices, assumed token limits, and a bounded buffer. Users approve this maximum on-chain; unused budget is refunded after settlement.
+
+## `POST /api/storage/upload-json?network=<network>`
+
+Uploads JSON to selected-network 0G Storage and returns the real root hash and upload transaction when available.
+
+## `POST /api/tasks/execute`
 
 Request:
 
 ```json
 {
-  "version": "1.0",
-  "app": "agent.fun"
-}
-```
-
-Response:
-
-```json
-{
-  "rootHash": "0x...",
-  "txHash": "0x...",
-  "sizeBytes": 1234,
-  "mode": "0g-storage"
-}
-```
-
-Used for:
-
-- agent metadata
-- initial memory
-- task prompts
-- task results
-- updated memory snapshots
-
-## POST `/api/compute/run-agent`
-
-Runs an agent task through the 0G Compute-compatible inference path and returns a compute hash. This route is useful for previews and internal workflows, but production paid tasks should use `/api/tasks/execute` so payment, Storage, DA, and chain completion are verified in one executor flow.
-
-Request:
-
-```json
-{
-  "metadata": {
-    "version": "1.0",
-    "app": "agent.fun",
-    "name": "AuditLite"
-  },
+  "network": "mainnet",
+  "taskId": "1",
   "prompt": {
     "version": "1.0",
-    "agentId": "3",
+    "agentId": "1",
     "requester": "0x...",
-    "prompt": "Review this Solidity function.",
-    "createdAt": "2026-05-09T00:00:00.000Z"
-  },
-  "model": "deepseek-v4-flash"
+    "prompt": "Complete this task.",
+    "createdAt": "2026-06-06T00:00:00.000Z"
+  }
 }
 ```
 
-Response:
+Execution:
 
-```json
-{
-  "response": "Task response...",
-  "provider": "0G Compute workflow",
-  "model": "deepseek-v4-flash",
-  "computeHash": "0x..."
-}
-```
+1. Reads the paid task and agent from the selected V2 contract.
+2. Rejects requester, agent, status, payment, or network mismatches.
+3. Downloads the creator's real metadata from its on-chain 0G Storage root.
+4. Verifies metadata creator and model against chain state.
+5. Runs the exact agent model and system prompt on 0G Compute.
+6. Calls `processResponse` for Galileo direct-provider settlement.
+7. Uploads result and updated memory to selected-network 0G Storage.
+8. Calculates actual compute cost from live pricing and returned usage.
+9. Completes V2 settlement; unused user budget is refunded.
 
-Production behavior:
-
-- Requires `OG_COMPUTE_KEY`.
-- Uses `https://router-api.0g.ai/v1` by default.
-- Does not return fallback output unless `OG_DEMO_MODE=true`.
-- Returns a clean configuration error when 0G Compute is not configured.
-
-## POST `/api/tasks/execute`
-
-Executes a paid task through the approved server executor.
-
-Request:
-
-```json
-{
-  "taskId": "1",
-  "metadata": {
-    "version": "1.0",
-    "app": "agent.fun",
-    "name": "AuditLite",
-    "symbol": "AUDIT",
-    "description": "Solidity review agent",
-    "category": "developer",
-    "creator": "0x...",
-    "agentIdTokenId": "3",
-    "avatar": { "prompt": "Audit AI agent" },
-    "systemPrompt": "Review smart contracts carefully.",
-    "model": { "provider": "0G Compute", "modelId": "deepseek-v4-flash", "teeRequired": false },
-    "pricing": { "minTaskFee": "0.0005", "chatFee": "0.0005", "creatorFeeBps": 300 },
-    "createdAt": "2026-06-04T00:00:00.000Z"
-  },
-  "prompt": {
-    "version": "1.0",
-    "agentId": "3",
-    "requester": "0x...",
-    "prompt": "Review this Solidity function.",
-    "createdAt": "2026-06-04T00:00:00.000Z"
-  },
-  "model": "deepseek-v4-flash"
-}
-```
-
-Response:
-
-```json
-{
-  "taskId": "1",
-  "resultRoot": "0x...",
-  "memoryRoot": "0x...",
-  "computeHash": "0x...",
-  "daCommitment": "0x...",
-  "daStatus": "attached",
-  "completionTx": "0x..."
-}
-```
-
-Execution checks:
-
-- Reads `getTask(taskId)` from 0G Chain.
-- Rejects unpaid, completed, mismatched, or invalid tasks.
-- Runs 0G Compute.
-- Uploads result and memory to 0G Storage.
-- Attempts to submit the proof payload to optional 0G DA when configured.
-- Signs `completeTask` with `EXECUTOR_PRIVATE_KEY`.
-- Requires the executor wallet to be authorized on-chain with `setExecutor`.
-
-## POST `/api/da/submit`
-
-Submits a DA commitment payload for task completion.
-
-Request:
-
-```json
-{
-  "app": "agent.fun",
-  "eventType": "task",
-  "agentId": "1",
-  "taskId": "1",
-  "resultRoot": "0x...",
-  "computeHash": "0x..."
-}
-```
-
-Response:
-
-```json
-{
-  "commitment": "0x...",
-  "mode": "gateway"
-}
-```
-
-Production behavior:
-
-- Uses `OG_DA_GATEWAY_URL` when configured.
-- Returns a best-effort DA proof result; core task execution no longer depends on DA being configured.
-- Deterministic fallback exists only when `OG_DEMO_MODE=true`.
-- Production receipts show DA as not attached when no live DA proof is available.
-
-## POST `/api/agent/generate-profile`
-
-Generates a launch profile from an idea and category.
-
-Used for future richer creator onboarding.
+The route requires server-only executor, Storage, and Compute credentials. It never returns fake output when those credentials are missing.

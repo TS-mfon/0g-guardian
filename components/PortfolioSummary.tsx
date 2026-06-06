@@ -12,7 +12,7 @@ const pendingStatuses = new Set([1, 2]);
 
 export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgents: AgentView[]; initialTasks: TaskView[] }) {
   const [address, setAddress] = useState("");
-  const [claimable, setClaimable] = useState("");
+  const [claimableByAgent, setClaimableByAgent] = useState<Record<string, string>>({});
   const [keyPositions, setKeyPositions] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState("");
@@ -23,14 +23,15 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
     if (!snapshot.address) return;
     try {
       const contract = await agentFunCoreReadContract();
+      const created = initialAgents.filter((agent) => agent.creator.toLowerCase() === snapshot.address.toLowerCase());
       const [earnings, positions] = await Promise.all([
-        contract.claimable(snapshot.address),
+        Promise.all(created.map(async (agent) => [agent.id, ethers.formatEther(await contract.agentCreatorClaimable(BigInt(agent.id)))] as const)),
         Promise.all(initialAgents.map(async (agent) => [agent.id, (await contract.keyBalance(BigInt(agent.id), snapshot.address)).toString()] as const))
       ]);
-      setClaimable(ethers.formatEther(earnings));
+      setClaimableByAgent(Object.fromEntries(earnings));
       setKeyPositions(Object.fromEntries(positions));
     } catch {
-      setClaimable("");
+      setClaimableByAgent({});
       setKeyPositions({});
     }
   }
@@ -65,14 +66,14 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
     }
   }
 
-  async function claimRevenue() {
-    setBusy("claim");
+  async function claimRevenue(agentId: string) {
+    setBusy(`claim-${agentId}`);
     setStatus("Claiming creator earnings...");
     try {
       const contract = await agentFunCoreContract();
-      const value = await contract.claimable(address);
+      const value = await contract.agentCreatorClaimable(BigInt(agentId));
       if (value === 0n) throw new Error("No claimable creator earnings yet.");
-      const tx = await contract.claimRevenue();
+      const tx = await contract.claimAgentRevenue(BigInt(agentId));
       await tx.wait();
       await refresh();
       setStatus(`Creator earnings claimed. Tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}.`);
@@ -85,7 +86,9 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
 
   const createdAgents = address ? initialAgents.filter((agent) => agent.creator.toLowerCase() === address.toLowerCase()) : [];
   const heldAgents = address ? initialAgents.filter((agent) => Number(keyPositions[agent.id] ?? "0") > 0) : [];
-  const pendingTasks = initialTasks.filter((task) => pendingStatuses.has(task.status));
+  const createdAgentIds = new Set(createdAgents.map((agent) => agent.id));
+  const pendingTasks = initialTasks.filter((task) => createdAgentIds.has(task.agentId) && pendingStatuses.has(task.status));
+  const totalCreatorEarnings = createdAgents.reduce((sum, agent) => sum + Number(claimableByAgent[agent.id] ?? "0"), 0);
   const walletLabel = address ? `${address.slice(0, 8)}...${address.slice(-6)}` : "Connect wallet";
 
   return (
@@ -94,19 +97,16 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
         <div><span>Wallet</span><strong>{walletLabel}</strong><p>Management actions unlock after connecting the creator wallet.</p></div>
         <div><span>Agents launched</span><strong>{address ? createdAgents.length : "Connect wallet"}</strong><p>Filtered from confirmed AgentLaunched records.</p></div>
         <div><span>Keys held</span><strong>{address ? heldAgents.length : "Connect"}</strong><p>Your key positions are read from `keyBalance`.</p></div>
-        <div><span>Creator earnings</span><strong>{claimable ? `${claimable} 0G` : address ? "0.0 0G" : "Connect"}</strong><p>Claimable balance for agents and activity owned by this wallet.</p></div>
+        {createdAgents.length ? <div><span>Private creator earnings</span><strong>{totalCreatorEarnings.toLocaleString(undefined, { maximumFractionDigits: 5 })} 0G</strong><p>Visible only because this wallet created agents.</p></div> : null}
       </section>
 
-      <section className="creator-console-grid">
+      {createdAgents.length ? <section className="creator-console-grid">
         <div className="glass-card creator-console-main">
           <div className="section-heading-row">
             <div>
               <span className="section-kicker">Creator console</span>
               <h2>Agents launched</h2>
             </div>
-            <button className="secondary-button" onClick={claimRevenue} disabled={!address || !!busy || !Number(claimable)}>
-              {busy === "claim" ? "Claiming..." : "Claim earnings"}
-            </button>
           </div>
           {!address ? <p className="empty-copy">Connect your wallet to manage agents you created on 0G Chain.</p> : null}
           {address && !createdAgents.length ? <p className="empty-copy">No created agents found for this wallet yet.</p> : null}
@@ -118,11 +118,15 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
                   <span>{agent.category} · Agent #{agent.id}</span>
                   <h3>{agent.name} <em>${agent.symbol}</em></h3>
                   <p>Readiness {agent.readinessScore}%. Market cap {agent.marketCap} 0G. {agent.taskCount} paid tasks.</p>
+                  <p className="private-revenue-copy">Private revenue: {claimableByAgent[agent.id] ?? "0.0"} 0G</p>
                   <div className="managed-actions">
                     <Link className="proof-link" href={`/agents/${agent.id}`}>Manage</Link>
                     <Link className="primary-button" href={`/agents/${agent.id}#creator-console`}>Activate compute</Link>
                     <button className="secondary-button" disabled={!!busy} onClick={() => setActive(agent.id, !agent.active)}>
                       {busy === `active-${agent.id}` ? "Updating..." : agent.active ? "Pause" : "Activate"}
+                    </button>
+                    <button className="secondary-button" disabled={!!busy || !Number(claimableByAgent[agent.id])} onClick={() => claimRevenue(agent.id)}>
+                      {busy === `claim-${agent.id}` ? "Claiming..." : "Claim revenue"}
                     </button>
                   </div>
                 </div>
@@ -151,7 +155,13 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
             )) : <p>No pending tasks right now.</p>}
           </div>
         </aside>
-      </section>
+      </section> : address ? (
+        <section className="glass-card user-portfolio-empty">
+          <span className="section-kicker">User portfolio</span>
+          <h2>No creator controls for this wallet</h2>
+          <p>Your key positions remain visible below. Creator revenue and management controls only appear for wallets that launched agents.</p>
+        </section>
+      ) : null}
       {status ? <p className="status-line portfolio-status">{status}</p> : null}
     </>
   );

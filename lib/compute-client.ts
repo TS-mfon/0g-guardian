@@ -6,30 +6,31 @@ export interface AgentRunResult {
   model: string;
   usage?: unknown;
   trace?: unknown;
+  chatId?: string;
 }
 
 export async function generateAgentProfile(input: { idea: string; category: string; model: string; apiKey?: string; baseUrl?: string }) {
   const prompt = `Create a concise launch profile for an AI agent on 0G. Idea: ${input.idea}. Category: ${input.category}.`;
-  const text = await call0GCompute({
+  const result = await call0GCompute({
     apiKey: input.apiKey,
     baseUrl: input.baseUrl,
     model: input.model,
     prompt,
     fallback: `A useful ${input.category} agent that turns user prompts into verifiable 0G-powered tasks.`
   });
-  return { description: text, systemPrompt: `You are an autonomous ${input.category} agent. ${text}` };
+  return { description: result.text, systemPrompt: `You are an autonomous ${input.category} agent. ${result.text}` };
 }
 
 export async function runAgentTask(input: { metadata: AgentMetadata; prompt: TaskPrompt; model: string; apiKey?: string; baseUrl?: string }): Promise<AgentRunResult> {
   const fallback = buildCapabilityResponse(input.metadata, input.prompt.prompt);
-  const response = await call0GCompute({
+  const execution = await call0GCompute({
     apiKey: input.apiKey,
     baseUrl: input.baseUrl,
     model: input.model,
     prompt: `${input.metadata.systemPrompt}\n\nUser task:\n${input.prompt.prompt}`,
     fallback
   });
-  return { response, provider: "0G Compute workflow", model: input.model };
+  return { response: execution.text, provider: "0G Compute", model: input.model, usage: execution.usage, chatId: execution.chatId };
 }
 
 function buildCapabilityResponse(metadata: AgentMetadata, prompt: string) {
@@ -57,7 +58,7 @@ async function call0GCompute(input: { apiKey?: string; baseUrl?: string; model: 
   const apiKey = input.apiKey ?? process.env.OG_COMPUTE_KEY ?? "";
   const demoMode = process.env.OG_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   if (!apiKey) {
-    if (demoMode) return input.fallback;
+    if (demoMode) return { text: input.fallback };
     throw new Error("0G Compute is not configured. Set OG_COMPUTE_KEY for production task execution.");
   }
 
@@ -78,5 +79,11 @@ async function call0GCompute(input: { apiKey?: string; baseUrl?: string; model: 
   });
   if (!response.ok) throw new Error(`0G Compute failed: ${response.status} ${await response.text()}`);
   const body = await response.json();
-  return body?.choices?.[0]?.message?.content ?? input.fallback;
+  const text = body?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("0G Compute returned an empty response.");
+  return {
+    text,
+    usage: body.usage,
+    chatId: response.headers.get("ZG-Res-Key") ?? response.headers.get("zg-res-key") ?? body.id
+  };
 }

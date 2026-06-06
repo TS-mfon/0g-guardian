@@ -2,12 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import { ethers } from "ethers";
-import { agentMetadataSchema, taskPromptSchema } from "@shared/index";
+import { taskPromptSchema } from "@shared/index";
 import { AgentView } from "@/lib/agentfun";
-import { clientConfig } from "@/lib/config";
+import { getZeroGNetwork } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
-import { agentFunCoreContract, connectWallet, getSelectedNetworkKey } from "@/lib/wallet";
+import { agentFunCoreContract, getSelectedNetworkKey, getSignerForAction } from "@/lib/wallet";
 import { TaskResultReceipt, TaskResultReceiptData } from "./TaskResultReceipt";
 
 function bytes32(value: string) {
@@ -20,7 +20,7 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
   const [taskTx, setTaskTx] = useState("");
   const [receipt, setReceipt] = useState<TaskResultReceiptData | null>(null);
   const [busy, setBusy] = useState(false);
-  const canCreateTask = Boolean(prompt.trim()) && agent.active && !busy;
+  const canCreateTask = Boolean(prompt.trim()) && agent.active && agent.computeActive && !busy;
 
   async function createTask(event: FormEvent) {
     event.preventDefault();
@@ -29,15 +29,22 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
     setStatus("Checking agent execution readiness...");
     try {
       const selectedNetwork = getSelectedNetworkKey();
-      const readiness = await fetch(`/api/agents/compute-key?agentId=${encodeURIComponent(agent.id)}&network=${encodeURIComponent(selectedNetwork)}`);
-      const readinessBody = await readiness.json().catch(() => null);
-      if (!readiness.ok || !readinessBody?.configured) {
-        throw new Error("The creator has not linked a 0G Compute key for this agent yet.");
+      if (!agent.computeActive) throw new Error("The creator has not activated compute for this agent yet.");
+      const readinessResponse = await fetch(`/api/readiness?network=${selectedNetwork}`);
+      const readiness = await readinessResponse.json().catch(() => null);
+      if (!readinessResponse.ok || !readiness?.taskReady) {
+        throw new Error("The selected network execution service is not ready. No payment was requested.");
       }
-      const activeModel = String(readinessBody.model ?? clientConfig.computeModel);
+      const quoteResponse = await fetch("/api/task-quote", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ network: selectedNetwork, model: agent.modelId })
+      });
+      const quote = await quoteResponse.json().catch(() => null);
+      if (!quoteResponse.ok || !quote?.computeBudget) throw new Error(quote?.error?.message ?? "Live compute pricing is unavailable.");
 
       setStatus("Connecting wallet...");
-      const { signer, address } = await connectWallet();
+      const { signer, address } = await getSignerForAction();
       const payload = taskPromptSchema.parse({
         version: "1.0",
         agentId: agent.id,
@@ -49,33 +56,19 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
       const upload = await uploadJsonTo0GFromBrowser(payload, signer, selectedNetwork);
       const promptRoot = upload.rootHash;
       const contract = await agentFunCoreContract();
-      const fee = await contract.minTaskFee();
-      const taskId = await contract.nextTaskId();
+      const [fee, taskId] = await Promise.all([contract.minTaskFee(), contract.nextTaskId()]);
+      const computeBudget = BigInt(quote.computeBudget);
+      const total = fee + computeBudget;
       setStatus("Signing paid task transaction...");
-      const tx = await contract.createTask(BigInt(agent.id), bytes32(promptRoot), { value: fee });
+      const tx = await contract.createTask(BigInt(agent.id), bytes32(promptRoot), computeBudget, BigInt(Math.floor(Date.now() / 1000) + 86_400), { value: total });
       setTaskTx(tx.hash);
       await tx.wait();
       setStatus("Task paid. Sending it to the verified executor...");
 
-      const metadata = agentMetadataSchema.parse({
-        version: "1.0",
-        app: "agent.fun",
-        name: agent.name,
-        symbol: agent.symbol,
-        description: `${agent.name} task execution profile.`,
-        category: agent.category,
-        creator: agent.creator,
-        agentIdTokenId: agent.agentIdTokenId,
-        avatar: { prompt: `${agent.name} AI agent` },
-        systemPrompt: `You are ${agent.name}, an autonomous 0G agent. Complete paid tasks clearly and concisely.`,
-        model: { provider: "0G Compute", modelId: activeModel, teeRequired: agent.category === "trading" },
-        pricing: { minTaskFee: "0.0005", chatFee: "0.0005", creatorFeeBps: 300 },
-        createdAt: new Date().toISOString()
-      });
       const executeResponse = await fetch("/api/tasks/execute", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ taskId: taskId.toString(), metadata, prompt: payload, model: activeModel, network: selectedNetwork })
+        body: JSON.stringify({ taskId: taskId.toString(), prompt: payload, network: selectedNetwork })
       });
       if (!executeResponse.ok) {
         const body = await executeResponse.json().catch(() => null);
@@ -86,19 +79,17 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
       setReceipt({
         taskId: String(execution.taskId),
         answer: String(execution.answer ?? ""),
-        model: String(execution.model ?? activeModel),
+        model: String(execution.model ?? agent.modelId),
         provider: String(execution.provider ?? "0G Compute"),
         resultRoot: String(execution.resultRoot),
         memoryRoot: String(execution.memoryRoot),
         computeHash: String(execution.computeHash),
-        daCommitment: String(execution.daCommitment),
-        daStatus: execution.daStatus === "attached" ? "attached" : "not_attached",
+        computeCost: String(execution.computeCost ?? ""),
         runningTx: execution.runningTx ? String(execution.runningTx) : undefined,
         completionTx: String(execution.completionTx)
       });
       setStatus(`Task completed by the verified executor. Create tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}. Complete tx ${execution.completionTx.slice(0, 10)}...${execution.completionTx.slice(-6)}.`);
     } catch (error) {
-      setTaskTx("");
       setStatus(getUserMessage(error, "Task failed. Please retry."));
     } finally {
       setBusy(false);
@@ -113,9 +104,9 @@ export function AgentTaskPanel({ agent }: { agent: AgentView }) {
         The app checks creator compute activation before asking your wallet for payment.
       </p>
       <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
-      <button className="primary-button" disabled={!canCreateTask}>{busy ? "Creating task..." : agent.active ? "Pay + Create Task" : "Agent paused"}</button>
+      <button className="primary-button" disabled={!canCreateTask}>{busy ? "Creating task..." : !agent.active ? "Agent paused" : !agent.computeActive ? "Creator activation required" : "Pay + Create Task"}</button>
       {status ? <p className="status-line">{status}</p> : null}
-      {taskTx ? <a className="proof-link" href={`${clientConfig.explorerUrl}/tx/${taskTx}`} target="_blank" rel="noreferrer">View task transaction</a> : null}
+      {taskTx ? <a className="proof-link" href={`${getZeroGNetwork(getSelectedNetworkKey()).explorerUrl}/tx/${taskTx}`} target="_blank" rel="noreferrer">View task transaction</a> : null}
       {receipt ? <TaskResultReceipt receipt={receipt} /> : null}
     </form>
   );

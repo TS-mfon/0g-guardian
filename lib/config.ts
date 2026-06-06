@@ -37,10 +37,8 @@ export const clientConfig = {
   storageScanUrl: zeroGNetworks.mainnet.storageScanUrl,
   agentFunCoreAddress: zeroGNetworks.mainnet.agentFunCoreAddress,
   agentIdContractAddress: zeroGNetworks.mainnet.agentIdContractAddress,
-  daGatewayUrl: process.env.NEXT_PUBLIC_DA_GATEWAY_URL ?? "",
   computeBaseUrl: process.env.NEXT_PUBLIC_0G_COMPUTE_BASE_URL ?? "https://router-api.0g.ai/v1",
   computeModel: process.env.NEXT_PUBLIC_0G_COMPUTE_MODEL ?? "zai-org/GLM-5-FP8",
-  directComputeProvider: process.env.NEXT_PUBLIC_0G_DIRECT_PROVIDER ?? "0xd9966e13a6026Fcca4b13E7ff95c94DE268C471C",
   protocolFeeWallet: process.env.NEXT_PUBLIC_PROTOCOL_FEE_WALLET ?? "0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E"
 };
 

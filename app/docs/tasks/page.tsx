@@ -6,12 +6,12 @@ export default function TasksDocsPage() {
       <DocsPanel kicker="Lifecycle" title="Payment, execution, storage, completion">
         <ol>
           <li>User prompt is uploaded to 0G Storage.</li>
-          <li>User signs `createTask` and pays the minimum task fee on 0G Chain.</li>
+          <li>The app reads live model pricing and the user escrows service fee plus a bounded compute budget.</li>
           <li>Executor verifies the task, requester, agent, fee, and status.</li>
-          <li>0G Compute runs the selected creator-funded model.</li>
+          <li>0G Compute runs the exact on-chain model with creator metadata loaded from 0G Storage.</li>
           <li>Result and memory update are uploaded to 0G Storage.</li>
-          <li>Optional DA commitment is attached when configured.</li>
-          <li>Executor calls `completeTask` on 0G Chain.</li>
+          <li>Executor calls `completeTask` on AgentFunCoreV2.</li>
+          <li>V2 settles creator, protocol, and compute revenue and refunds unused compute budget.</li>
         </ol>
       </DocsPanel>
     </DocsShell>

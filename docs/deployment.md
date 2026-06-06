@@ -1,39 +1,42 @@
-# Agent.fun Deployment
+# Agent.fun V2 Deployment
 
 ## Contracts
 
 ```bash
-npm run test:contracts
-DEPLOYER_PRIVATE_KEY=0x... npm run deploy:mainnet
+npm run verify
+npm run deploy:v2:testnet
+npm run deploy:v2:mainnet
 ```
 
-The script deploys:
+The V2 deployment script:
 
-- `AgentFunCore`
-- `MockAgentId` adapter
+1. deploys `MockAgentId`
+2. deploys `AgentFunCoreV2` with protocol and compute treasury addresses
+3. approves every supported model hash
+4. writes network-specific deployment evidence
 
-## Vercel Env
+Current V2 addresses are documented in the root README and `deployment.env`.
+
+## Required Public Runtime Env
 
 ```text
-NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS=0x...
-NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS=0x...
-NEXT_PUBLIC_0G_CHAIN_ID=16661
-NEXT_PUBLIC_0G_CHAIN_ID_HEX=0x4115
-NEXT_PUBLIC_0G_RPC_URL=https://evmrpc.0g.ai
-NEXT_PUBLIC_0G_EXPLORER=https://chainscan.0g.ai
-NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai
-NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai
-NEXT_PUBLIC_0G_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
-NEXT_PUBLIC_0G_COMPUTE_MODEL=deepseek-v4-flash
-NEXT_PUBLIC_0G_DIRECT_PROVIDER=0xd9966e13a6026Fcca4b13E7ff95c94DE268C471C
-AGENTFUN_DATA_DIR=.agentfun-data
-AGENTFUN_CREDENTIAL_SECRET=
-OG_COMPUTE_KEY=
-OG_DA_GATEWAY_URL=
+NEXT_PUBLIC_MAINNET_AGENT_FUN_CORE_ADDRESS=0x637e7F5BF1dF450E0e4Cf7D80156C70210f3dB46
+NEXT_PUBLIC_MAINNET_AGENT_ID_CONTRACT_ADDRESS=0xA2BD5625E382eB759379681C69f319501b7BA7F1
+NEXT_PUBLIC_TESTNET_AGENT_FUN_CORE_ADDRESS=0x28696a881D57BC3Ed88AbE082a82934d8b82E893
+NEXT_PUBLIC_TESTNET_AGENT_ID_CONTRACT_ADDRESS=0x2d46d1ED4eC91593889f106b0a3aF1BF38a4458d
+NEXT_PUBLIC_PROTOCOL_FEE_WALLET=0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E
 ```
 
-Agent creators activate compute from the agent page. The app guides them through the required 0G Compute wallet transactions: 3 0G ledger creation when needed, 1 0G provider funding when needed, provider acknowledgement, and encrypted direct provider token storage.
+## Required Server Env
 
-`OG_DA_GATEWAY_URL` is optional in v1. When it is configured, task receipts can attach a DA commitment. When it is empty, tasks still complete with 0G Storage roots, compute hash, and 0G Chain completion.
+```text
+SERVER_WALLET_PRIVATE_KEY=...
+EXECUTOR_PRIVATE_KEY=...
+OG_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
+OG_COMPUTE_KEY=...
+OG_TESTNET_COMPUTE_BASE_URL=...
+OG_TESTNET_COMPUTE_KEY=...
+OG_DEMO_MODE=false
+```
 
-Do not expose deployer keys, GitHub tokens, Vercel tokens, or private compute keys through `NEXT_PUBLIC_*`.
+Creators do not manage provider keys. Users fund task compute through V2 escrow. Never expose private keys, GitHub tokens, Vercel tokens, or compute keys through `NEXT_PUBLIC_*`.

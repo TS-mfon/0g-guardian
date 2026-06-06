@@ -2,21 +2,15 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
-import { AgentCategory, agentMetadataSchema, agentMemorySchema } from "@shared/index";
+import { AgentCategory, agentFunCoreAbi, agenticIdAbi, agentMetadataSchema, agentMemorySchema } from "@shared/index";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { genesisTemplates } from "@/lib/agent-templates";
-import { agentCategories, computeModelMatrix, computeModelsByCategory, findComputeModel, getActivationQuote, getDefaultComputeModel, isModelAllowedForCategory } from "@/lib/compute-models";
+import { agentCategories, computeModelMatrix, computeModelsByCategory, findComputeModel, getDefaultComputeModel, isModelAllowedForCategory } from "@/lib/compute-models";
 import { getZeroGNetwork, ZeroGNetworkKey } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { hashJson, shortHash } from "@/lib/hash";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
-import {
-  agentFunCoreContract,
-  agentIdContract,
-  connectWallet,
-  getSelectedNetworkKey,
-  verifySelectedNetworkContracts
-} from "@/lib/wallet";
+import { getSelectedNetworkKey, getSignerForAction, verifySelectedNetworkContracts } from "@/lib/wallet";
 
 function bytes32(value: string) {
   return ethers.zeroPadValue(value as `0x${string}`, 32);
@@ -38,9 +32,10 @@ export function LaunchAgentForm() {
   const [busy, setBusy] = useState(false);
   const [launchedAgentId, setLaunchedAgentId] = useState("");
   const [networkKey, setNetworkKey] = useState<ZeroGNetworkKey>("mainnet");
+  const [readiness, setReadiness] = useState<"checking" | "ready" | "blocked">("checking");
+  const [availableModels, setAvailableModels] = useState<Set<string>>(new Set());
   const network = getZeroGNetwork(networkKey);
   const selectedModel = findComputeModel(category, selectedModelId);
-  const activationQuote = getActivationQuote(selectedModel);
   const canLaunch = Boolean(name.trim() && symbol.trim() && description.trim() && systemPrompt.trim() && selectedModelId) && !busy;
 
   useEffect(() => {
@@ -49,6 +44,31 @@ export function LaunchAgentForm() {
     window.addEventListener("agentfun:network", onNetwork);
     return () => window.removeEventListener("agentfun:network", onNetwork);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function preflight() {
+      setReadiness("checking");
+      try {
+        const [readyResponse, modelsResponse] = await Promise.all([
+          fetch(`/api/readiness?network=${networkKey}`),
+          fetch(`/api/models?network=${networkKey}`)
+        ]);
+        const readyBody = await readyResponse.json();
+        const modelsBody = await modelsResponse.json();
+        if (cancelled) return;
+        setReadiness(readyResponse.ok && readyBody.ready ? "ready" : "blocked");
+        setAvailableModels(new Set((modelsBody.models ?? []).map((model: { id: string }) => model.id)));
+      } catch {
+        if (!cancelled) {
+          setReadiness("blocked");
+          setAvailableModels(new Set());
+        }
+      }
+    }
+    void preflight();
+    return () => { cancelled = true; };
+  }, [networkKey]);
 
   function loadTemplate(value: string) {
     const next = genesisTemplates.find((item) => item.name === value) ?? genesisTemplates[0];
@@ -74,14 +94,21 @@ export function LaunchAgentForm() {
     setLaunchedAgentId("");
     setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
     try {
-      const { provider, signer, address } = await connectWallet();
+      if (readiness !== "ready") throw new Error(`${network.label} is not ready for launches. Check network readiness and retry.`);
+      if (!availableModels.has(selectedModelId)) throw new Error(`${selectedModel.label} is not currently available on ${network.label}.`);
+      const { provider, signer, address } = await getSignerForAction();
       const selectedNetwork = await verifySelectedNetworkContracts(provider);
       setNetworkKey(selectedNetwork.key);
       if (!isModelAllowedForCategory(category, selectedModelId)) {
         throw new Error("Choose a 0G Compute model that supports this agent task type.");
       }
-      const idContract = await agentIdContract(selectedNetwork.key);
-      const nextTokenId = await idContract.nextTokenId();
+      const idContract = new ethers.Contract(selectedNetwork.agentIdContractAddress, agenticIdAbi, signer);
+      const contract = new ethers.Contract(selectedNetwork.agentFunCoreAddress, agentFunCoreAbi, signer);
+      const [nextTokenId, launchFee, nextAgentId] = await Promise.all([
+        idContract.nextTokenId(),
+        contract.launchFee(),
+        contract.nextAgentId()
+      ]);
       const nextTokenIdText = nextTokenId.toString();
       const now = new Date().toISOString();
       const metadata = agentMetadataSchema.parse({
@@ -111,8 +138,10 @@ export function LaunchAgentForm() {
       });
 
       setStatus("Uploading metadata and memory to 0G Storage...");
-      const metadataUpload = await uploadJsonTo0GFromBrowser(metadata, signer, selectedNetwork.key);
-      const memoryUpload = await uploadJsonTo0GFromBrowser(memory, signer, selectedNetwork.key);
+      const [metadataUpload, memoryUpload] = await Promise.all([
+        uploadJsonTo0GFromBrowser(metadata, signer, selectedNetwork.key),
+        uploadJsonTo0GFromBrowser(memory, signer, selectedNetwork.key)
+      ]);
       const metadataRoot = metadataUpload.rootHash;
       const memoryRoot = memoryUpload.rootHash;
       const capabilityHash = hashJson({ category, systemPrompt, model: selectedModel.id, tier: selectedModel.tier, teeRequired: selectedModel.teeRequired });
@@ -124,9 +153,6 @@ export function LaunchAgentForm() {
       setAgentIdTokenId(nextTokenIdText);
 
       setStatus("Signing launchAgent transaction on 0G Chain...");
-      const contract = await agentFunCoreContract(selectedNetwork.key);
-      const launchFee = await contract.launchFee();
-      const nextAgentId = await contract.nextAgentId();
       const tx = await contract.launchAgent(
         name,
         symbol.toUpperCase(),
@@ -135,6 +161,7 @@ export function LaunchAgentForm() {
         bytes32(metadataRoot),
         bytes32(memoryRoot),
         capabilityHash,
+        selectedModel.id,
         { value: launchFee }
       );
       setTxHash(tx.hash);
@@ -156,7 +183,7 @@ export function LaunchAgentForm() {
       <form className="glass-card launch-form" onSubmit={launch}>
         <div className="network-readiness-card">
           <span className="status-badge pending">{network.label}</span>
-          <strong>{network.agentFunCoreAddress && network.agentIdContractAddress ? "Launch preflight enabled" : "Contracts not configured"}</strong>
+          <strong>{readiness === "ready" ? "Network ready" : readiness === "checking" ? "Checking live services..." : "Launch temporarily unavailable"}</strong>
           <p>
             Launches use the selected 0G network, verify live contracts, upload metadata to 0G Storage, then register the agent on-chain.
           </p>
@@ -183,7 +210,7 @@ export function LaunchAgentForm() {
         <label>
           0G Compute model for this task type
           <select value={selectedModelId} onChange={(event) => setSelectedModelId(event.target.value)}>
-            {computeModelsByCategory[category].map((model) => <option value={model.id} key={model.id}>{model.label} · {model.tier}</option>)}
+            {computeModelsByCategory[category].map((model) => <option value={model.id} key={model.id} disabled={!availableModels.has(model.id)}>{model.label} · {availableModels.has(model.id) ? model.tier : "unavailable on selected network"}</option>)}
           </select>
         </label>
         <div className="model-matrix-panel">
@@ -216,11 +243,11 @@ export function LaunchAgentForm() {
           <span className={selectedModel.teeRequired ? "status-badge success" : "status-badge pending"}>{selectedModel.modality}</span>
           <strong>{selectedModel.label}</strong>
           <p>{selectedModel.reason}</p>
-          <p>{activationQuote.label}: {activationQuote.deposit} 0G compute deposit + {activationQuote.protocolFee} 0G protocol activation fee.</p>
+          <p>{availableModels.has(selectedModel.id) ? `Live provider availability confirmed on ${network.label}. Activation fee is read from the contract after launch.` : `No healthy ${network.label} provider currently advertises this model.`}</p>
         </div>
         <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
         <label>System prompt<textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} /></label>
-        <button className="primary-button" disabled={!canLaunch}>{busy ? "Launching..." : "Launch verified agent"}</button>
+        <button className="primary-button" disabled={!canLaunch || readiness !== "ready" || !availableModels.has(selectedModel.id)}>{busy ? "Launching..." : "Launch verified agent"}</button>
         {status ? <p className="status-line">{status}</p> : null}
         {launchedAgentId ? (
           <div className="post-launch-actions">

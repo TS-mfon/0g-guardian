@@ -2,20 +2,19 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { ethers } from "ethers";
-import { agentMetadataSchema, taskPromptSchema } from "@shared/index";
+import { taskPromptSchema } from "@shared/index";
 import { TaskResultReceipt, TaskResultReceiptData } from "@/components/TaskResultReceipt";
 import { AgentView } from "@/lib/agentfun";
-import { clientConfig } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
-import { agentFunCoreContract, connectWallet, getSelectedNetworkKey } from "@/lib/wallet";
+import { agentFunCoreContract, getSelectedNetworkKey, getSignerForAction } from "@/lib/wallet";
 
 function bytes32(value: string) {
   return ethers.zeroPadValue(value as `0x${string}`, 32);
 }
 
 export function AgentComparePanel({ agents }: { agents: AgentView[] }) {
-  const liveAgents = useMemo(() => agents.filter((agent) => agent.active), [agents]);
+  const liveAgents = useMemo(() => agents.filter((agent) => agent.active && agent.computeActive), [agents]);
   const [agentA, setAgentA] = useState(liveAgents[0]?.id ?? "");
   const [agentB, setAgentB] = useState(liveAgents[1]?.id ?? liveAgents[0]?.id ?? "");
   const [prompt, setPrompt] = useState("Compare both agents on a useful task and return the strongest practical answer.");
@@ -27,17 +26,19 @@ export function AgentComparePanel({ agents }: { agents: AgentView[] }) {
   const selectedB = liveAgents.find((agent) => agent.id === agentB);
   const canCompare = Boolean(selectedA && selectedB && selectedA.id !== selectedB.id && prompt.trim()) && !busy;
 
-  async function ensureReady(agent: AgentView) {
-    const response = await fetch(`/api/agents/compute-key?agentId=${encodeURIComponent(agent.id)}&network=${encodeURIComponent(getSelectedNetworkKey())}`);
-    const body = await response.json().catch(() => null);
-    if (!response.ok || !body?.configured) {
-      throw new Error(`${agent.name} is not ready for paid tasks because the creator has not activated 0G Compute.`);
-    }
-    return String(body.model ?? clientConfig.computeModel);
-  }
-
   async function runOne(agent: AgentView, signer: ethers.Signer, requester: string) {
-    const activeModel = await ensureReady(agent);
+    if (!agent.computeActive) throw new Error(`${agent.name} is not ready because the creator has not activated compute.`);
+    const network = getSelectedNetworkKey();
+    const readinessResponse = await fetch(`/api/readiness?network=${network}`);
+    const readiness = await readinessResponse.json().catch(() => null);
+    if (!readinessResponse.ok || !readiness?.taskReady) throw new Error(`${agent.name} cannot run because the selected network execution service is not ready.`);
+    const quoteResponse = await fetch("/api/task-quote", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ network, model: agent.modelId })
+    });
+    const quote = await quoteResponse.json().catch(() => null);
+    if (!quoteResponse.ok || !quote?.computeBudget) throw new Error(quote?.error?.message ?? `Could not price ${agent.name}.`);
     const payload = taskPromptSchema.parse({
       version: "1.0",
       agentId: agent.id,
@@ -46,34 +47,19 @@ export function AgentComparePanel({ agents }: { agents: AgentView[] }) {
       createdAt: new Date().toISOString()
     });
     setStatus(`Uploading ${agent.name}'s comparison prompt to 0G Storage...`);
-    const upload = await uploadJsonTo0GFromBrowser(payload, signer, getSelectedNetworkKey());
+    const upload = await uploadJsonTo0GFromBrowser(payload, signer, network);
     const contract = await agentFunCoreContract();
-    const fee = await contract.minTaskFee();
-    const taskId = await contract.nextTaskId();
+    const [fee, taskId] = await Promise.all([contract.minTaskFee(), contract.nextTaskId()]);
+    const computeBudget = BigInt(quote.computeBudget);
     setStatus(`Sign paid task transaction for ${agent.name}.`);
-    const tx = await contract.createTask(BigInt(agent.id), bytes32(upload.rootHash), { value: fee });
+    const tx = await contract.createTask(BigInt(agent.id), bytes32(upload.rootHash), computeBudget, BigInt(Math.floor(Date.now() / 1000) + 86_400), { value: fee + computeBudget });
     await tx.wait();
 
     setStatus(`Executing ${agent.name} through the verified task pipeline...`);
-    const metadata = agentMetadataSchema.parse({
-      version: "1.0",
-      app: "agent.fun",
-      name: agent.name,
-      symbol: agent.symbol,
-      description: `${agent.name} comparison execution profile.`,
-      category: agent.category,
-      creator: agent.creator,
-      agentIdTokenId: agent.agentIdTokenId,
-      avatar: { prompt: `${agent.name} AI agent` },
-      systemPrompt: `You are ${agent.name}, an autonomous 0G agent. Complete comparison tasks clearly and concisely.`,
-      model: { provider: "0G Compute", modelId: activeModel, teeRequired: agent.category === "trading" },
-      pricing: { minTaskFee: "0.0005", chatFee: "0.0005", creatorFeeBps: 300 },
-      createdAt: new Date().toISOString()
-    });
     const executeResponse = await fetch("/api/tasks/execute", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ taskId: taskId.toString(), metadata, prompt: payload, model: activeModel, network: getSelectedNetworkKey() })
+      body: JSON.stringify({ taskId: taskId.toString(), prompt: payload, network })
     });
     const execution = await executeResponse.json().catch(() => null);
     if (!executeResponse.ok) {
@@ -82,13 +68,12 @@ export function AgentComparePanel({ agents }: { agents: AgentView[] }) {
     return {
       taskId: String(execution.taskId),
       answer: String(execution.answer ?? ""),
-      model: String(execution.model ?? activeModel),
+      model: String(execution.model ?? agent.modelId),
       provider: String(execution.provider ?? "0G Compute"),
       resultRoot: String(execution.resultRoot),
       memoryRoot: String(execution.memoryRoot),
       computeHash: String(execution.computeHash),
-      daCommitment: String(execution.daCommitment),
-      daStatus: execution.daStatus === "attached" ? "attached" : "not_attached",
+      computeCost: String(execution.computeCost ?? ""),
       runningTx: execution.runningTx ? String(execution.runningTx) : undefined,
       completionTx: String(execution.completionTx)
     } satisfies TaskResultReceiptData;
@@ -102,7 +87,7 @@ export function AgentComparePanel({ agents }: { agents: AgentView[] }) {
     setResultB(null);
     setStatus("Connecting wallet for comparison tasks...");
     try {
-      const { signer, address } = await connectWallet();
+      const { signer, address } = await getSignerForAction();
       const first = await runOne(selectedA, signer, address);
       setResultA(first);
       const second = await runOne(selectedB, signer, address);
@@ -115,7 +100,15 @@ export function AgentComparePanel({ agents }: { agents: AgentView[] }) {
     }
   }
 
-  if (liveAgents.length < 2) return null;
+  if (liveAgents.length < 2) {
+    return (
+      <section className="glass-card compare-panel">
+        <span className="section-kicker">Compare lab</span>
+        <h2>Two execution-ready agents required</h2>
+        <p>Comparison becomes available after at least two creators activate compute for their agents.</p>
+      </section>
+    );
+  }
 
   return (
     <form className="glass-card compare-panel" onSubmit={compare}>

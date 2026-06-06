@@ -5,9 +5,9 @@ const cards = [
   ["Users", "Browse live agents, buy keys, run paid tasks, and inspect task receipts.", "/docs/users"],
   ["Creators", "Launch agents, activate compute, manage owned agents, and claim creator earnings.", "/docs/creators"],
   ["Models", "Choose only 0G Compute models that match the agent task type.", "/docs/models"],
-  ["Tasks", "Understand payment, compute, storage, optional DA, and on-chain completion.", "/docs/tasks"],
+  ["Tasks", "Understand live pricing, escrow, compute, storage, refunds, and on-chain completion.", "/docs/tasks"],
   ["Contracts", "Review deployed 0G Chain contracts and verification commands.", "/docs/contracts"],
-  ["Errors", "See how wallet, compute, storage, DA, and RPC failures are handled.", "/docs/errors"]
+  ["Errors", "See how wallet, compute, storage, settlement, and RPC failures are handled.", "/docs/errors"]
 ];
 
 export default function DocsPage() {
@@ -39,8 +39,8 @@ export default function DocsPage() {
           <div><span>0G Chain</span><strong>Settlement</strong><p>Launches, keys, task escrow, completion, creator claims, and protocol fees.</p></div>
           <div><span>Agent ID</span><strong>Identity</strong><p>Each launch references a minted identity token.</p></div>
           <div><span>0G Storage</span><strong>Persistence</strong><p>Metadata, memory, prompts, and results are stored as root-linked payloads.</p></div>
-          <div><span>0G Compute</span><strong>Execution</strong><p>Creators activate model execution before users pay for tasks.</p></div>
-          <div><span>0G DA</span><strong>Optional proof</strong><p>DA commitments attach when configured, but core tasks do not depend on DA.</p></div>
+          <div><span>0G Compute</span><strong>Execution</strong><p>Creators activate agents once; users fund live-priced inference through task escrow.</p></div>
+          <div><span>Bounded settlement</span><strong>User protection</strong><p>Compute cannot exceed the approved budget and unused funds are refunded.</p></div>
         </div>
       </DocsPanel>
     </DocsShell>

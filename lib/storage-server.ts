@@ -24,3 +24,12 @@ export async function uploadBytesTo0GFromServer(encoded: Uint8Array, networkKey:
   if (!rootHash) throw new Error("0G Storage upload completed without a root hash.");
   return { rootHash: String(rootHash), txHash: tx?.txHash ? String(tx.txHash) : undefined, sizeBytes: encoded.byteLength, mode: "0g-storage" };
 }
+
+export async function downloadJsonFrom0G<T>(rootHash: string, networkKey: ZeroGNetworkKey = "mainnet"): Promise<T> {
+  const network = getZeroGNetwork(networkKey);
+  const sdk = (await import("@0gfoundation/0g-storage-ts-sdk")) as any;
+  const indexer = new sdk.Indexer(network.storageIndexer);
+  const [blob, error] = await indexer.downloadToBlob(rootHash, { proof: true });
+  if (error !== null || !blob) throw new Error(`0G Storage download failed: ${error ?? "empty response"}`);
+  return JSON.parse(await blob.text()) as T;
+}

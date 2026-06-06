@@ -1,5 +1,6 @@
 import "./styles.css";
 import type { Metadata } from "next";
+import { WalletProvider } from "@/components/WalletProvider";
 
 export const metadata: Metadata = {
   title: "Agent.fun on 0G",
@@ -13,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        {children}
+        <WalletProvider>{children}</WalletProvider>
       </body>
     </html>
   );

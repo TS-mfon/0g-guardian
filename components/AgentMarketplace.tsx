@@ -2,10 +2,10 @@ import Link from "next/link";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { AgentView, loadAgentsFromChain } from "@/lib/agentfun";
 import { genesisTemplates } from "@/lib/agent-templates";
-import { zeroGNetworks } from "@/lib/config";
+import { getZeroGNetwork, ZeroGNetworkKey } from "@/lib/config";
 
-export async function AgentMarketplace({ mode = "marketplace" }: { mode?: "marketplace" | "arena" }) {
-  const agents = await loadAgentsFromChain();
+export async function AgentMarketplace({ mode = "marketplace", networkKey = "mainnet" }: { mode?: "marketplace" | "arena"; networkKey?: ZeroGNetworkKey }) {
+  const agents = await loadAgentsFromChain(networkKey);
   if (!agents.length && mode === "arena") {
     return (
       <section className="arena-empty-state">
@@ -22,7 +22,7 @@ export async function AgentMarketplace({ mode = "marketplace" }: { mode?: "marke
 
   return (
     <section className="market-grid">
-      {agents.length ? agents.map((agent) => <LiveAgentTile agent={agent} key={agent.id} />) : <GenesisLaunchTemplates />}
+      {agents.length ? agents.map((agent) => <LiveAgentTile agent={agent} key={agent.id} />) : <GenesisLaunchTemplates networkKey={networkKey} />}
     </section>
   );
 }
@@ -46,8 +46,8 @@ function LiveAgentTile({ agent }: { agent: AgentView }) {
   );
 }
 
-function GenesisLaunchTemplates() {
-  const chainLabel = zeroGNetworks.mainnet.label;
+function GenesisLaunchTemplates({ networkKey = "mainnet" }: { networkKey?: ZeroGNetworkKey }) {
+  const chainLabel = getZeroGNetwork(networkKey).label;
   return (
     <>
       {genesisTemplates.map((agent) => (

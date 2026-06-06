@@ -1,11 +1,13 @@
 import { AgentMarketplace } from "@/components/AgentMarketplace";
 import { SiteNav } from "@/components/SiteNav";
 import { getAgentMarketStats, loadAgentsFromChain } from "@/lib/agentfun";
+import { getServerNetwork } from "@/lib/server-network";
 
 export const dynamic = "force-dynamic";
 
 export default async function AgentsPage() {
-  const stats = getAgentMarketStats(await loadAgentsFromChain());
+  const networkKey = await getServerNetwork();
+  const stats = getAgentMarketStats(await loadAgentsFromChain(networkKey));
   return (
     <main>
       <SiteNav />
@@ -24,7 +26,7 @@ export default async function AgentsPage() {
           <div><span>Task demand</span><strong>{stats.totalTasks}</strong></div>
         </div>
       </section>
-      <AgentMarketplace />
+      <AgentMarketplace networkKey={networkKey} />
     </main>
   );
 }

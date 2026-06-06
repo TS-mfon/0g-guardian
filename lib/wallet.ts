@@ -8,6 +8,8 @@ declare global {
   }
 }
 
+let signerPromise: Promise<{ provider: BrowserProvider; signer: ethers.Signer; address: string }> | null = null;
+
 export async function getBrowserProvider() {
   if (typeof window === "undefined" || !window.ethereum) {
     throw new Error("No injected wallet found. Install a wallet that supports custom EVM networks.");
@@ -76,6 +78,7 @@ export function getSelectedNetworkKey(): ZeroGNetworkKey {
 export function setSelectedNetworkKey(key: ZeroGNetworkKey) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem("agentfun.network", key);
+  document.cookie = `agentfun.network=${key}; path=/; max-age=31536000; samesite=lax`;
   window.dispatchEvent(new CustomEvent("agentfun:network", { detail: { key } }));
 }
 
@@ -85,7 +88,11 @@ export async function ensureZeroGNetwork(provider: BrowserProvider) {
   if (Number(network.chainId) === selected.chainId) return;
   try {
     await provider.send("wallet_switchEthereumChain", [{ chainId: selected.chainIdHex }]);
-  } catch {
+  } catch (error) {
+    const anyError = error as { code?: number; info?: { error?: { code?: number } } };
+    const code = anyError.code ?? anyError.info?.error?.code;
+    if (code === 4001) throw error;
+    if (code !== 4902) throw error;
     await provider.send("wallet_addEthereumChain", [
       {
         chainId: selected.chainIdHex,
@@ -123,16 +130,22 @@ export async function verifySelectedNetworkContracts(provider: BrowserProvider) 
 }
 
 export async function getSignerForAction() {
-  const provider = await getBrowserProvider();
-  const accounts = await provider.send("eth_accounts", []);
-  if (!Array.isArray(accounts) || !accounts[0]) {
-    await provider.send("eth_requestAccounts", []);
+  if (signerPromise) return signerPromise;
+  signerPromise = (async () => {
+    const provider = await getBrowserProvider();
+    const accounts = await provider.send("eth_accounts", []);
+    if (!Array.isArray(accounts) || !accounts[0]) await provider.send("eth_requestAccounts", []);
+    await ensureZeroGNetwork(provider);
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
+    rememberWallet(address);
+    return { provider, signer, address };
+  })();
+  try {
+    return await signerPromise;
+  } finally {
+    signerPromise = null;
   }
-  await ensureZeroGNetwork(provider);
-  const signer = await provider.getSigner();
-  const address = await signer.getAddress();
-  rememberWallet(address);
-  return { provider, signer, address };
 }
 
 export async function agentFunCoreReadContract(networkKey = getSelectedNetworkKey()) {

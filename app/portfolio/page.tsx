@@ -2,11 +2,13 @@ import { SiteNav } from "@/components/SiteNav";
 import { PortfolioSummary } from "@/components/PortfolioSummary";
 import { WalletConnect } from "@/components/WalletConnect";
 import { loadAgentsFromChain, loadTasksFromChain } from "@/lib/agentfun";
+import { getServerNetwork } from "@/lib/server-network";
 
 export const dynamic = "force-dynamic";
 
 export default async function PortfolioPage() {
-  const [agents, tasks] = await Promise.all([loadAgentsFromChain(), loadTasksFromChain()]);
+  const networkKey = await getServerNetwork();
+  const [agents, tasks] = await Promise.all([loadAgentsFromChain(networkKey), loadTasksFromChain(networkKey)]);
   return (
     <main>
       <SiteNav />

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { AgentView } from "@/lib/agentfun";
 import { getUserMessage } from "@/lib/errors";
-import { agentFunCoreContract, getConnectedWallet, wantsWalletReconnect } from "@/lib/wallet";
+import { agentFunCoreContract, agentFunCoreReadContract, getConnectedWallet, wantsWalletReconnect } from "@/lib/wallet";
 
 export function AgentActions({ agent }: { agent: AgentView }) {
   const [status, setStatus] = useState("");
@@ -15,7 +15,7 @@ export function AgentActions({ agent }: { agent: AgentView }) {
     try {
       const wallet = await getConnectedWallet();
       if (!wallet.address) return;
-      const contract = await agentFunCoreContract();
+      const contract = await agentFunCoreReadContract();
       const keys = await contract.keyBalance(BigInt(agent.id), wallet.address);
       setWalletBalance(keys.toString());
     } catch {
@@ -37,7 +37,7 @@ export function AgentActions({ agent }: { agent: AgentView }) {
       const contract = await agentFunCoreContract();
       const price = await contract.getBuyPrice(BigInt(agent.id), 1n);
       setStatus("Sign wallet transaction to buy 1 agent key.");
-      const tx = await contract.buyKeys(BigInt(agent.id), 1n, { value: price });
+      const tx = await contract.buyKeys(BigInt(agent.id), 1n, price, { value: price });
       await tx.wait();
       await refreshPosition();
       setStatus(`Bought 1 key. The next key price increased on-chain. Tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}.`);

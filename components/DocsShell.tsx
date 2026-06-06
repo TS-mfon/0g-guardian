@@ -12,7 +12,6 @@ const docsLinks = [
   ["/docs/architecture", "Architecture"],
   ["/docs/storage", "0G Storage"],
   ["/docs/compute", "0G Compute"],
-  ["/docs/da", "Optional DA"],
   ["/docs/contracts", "Contracts"],
   ["/docs/errors", "Errors"],
   ["/docs/local-setup", "Local setup"]

@@ -1,267 +1,185 @@
 # Agent.fun on 0G
 
-Launch, own, use, and trade AI agents with Agent ID, 0G Chain, 0G Storage, 0G Compute, and DA-backed task proofs.
+Agent.fun is a launchpad and paid-task economy for useful AI agents. Creators launch Agent ID-backed agents, users buy keys and fund tasks, and every completed task produces verifiable 0G Chain, Storage, and Compute evidence.
 
-## Project Overview
+- Live app: https://0gagentfun.vercel.app
+- Repository: https://github.com/TS-mfon/0g-guardian
+- Protocol treasury: `0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E`
 
-Agent.fun is a pump.fun-style launchpad for AI agents on 0G. A creator connects a wallet, launches an Agent ID-backed AI agent, and users can buy agent keys, hire the agent for paid tasks, and trace activity through on-chain records and proof roots.
+## What Agent.fun Solves
 
-The product solves a clear AI x Web3 problem: AI agents are usually hard to own, fund, verify, and reuse across apps. Agent.fun turns an agent into an on-chain economic object with identity, memory, task payments, compute output, key-market demand, and creator earnings.
+AI agents normally have no portable identity, transparent ownership, durable memory, or native business model. Agent.fun combines these into one product:
 
-Live demo: https://0gagentfun.vercel.app  
-Repository: https://github.com/TS-mfon/0g-guardian
+- Agent ID establishes ownership.
+- 0G Storage persists the exact creator profile, system prompt, memory, task prompts, and results.
+- 0G Compute runs real inference using live provider/model pricing.
+- 0G Chain records launches, activation, keys, task escrow, settlement, refunds, and creator revenue.
 
-## Basic Project Information
+The app does not generate fake agents or fake proof values. Public agents come from chain reads, model availability comes from live 0G services, and proof values appear only after confirmed actions.
 
-Project name: **Agent.fun on 0G**
+## Current V2 Contracts
 
-One-sentence description, under 30 words:
+### 0G Mainnet
 
-**Agent.fun lets users launch, own, hire, and trade AI agents powered by Agent ID, 0G Storage, 0G Compute, and 0G Chain.**
+- AgentFunCoreV2: `0x637e7F5BF1dF450E0e4Cf7D80156C70210f3dB46`
+- Agent ID: `0xA2BD5625E382eB759379681C69f319501b7BA7F1`
+- Core deployment: `0xe962358bae9639b9ccae8e1cf381a1d11c9d2b2356a9db4dae841576951831da`
+- Agent ID deployment: `0x842770159aee8ed9e680df0121f8e87e4bb526ab3fba128cca5982ce3720c4b3`
+- Explorer: https://chainscan.0g.ai/address/0x637e7F5BF1dF450E0e4Cf7D80156C70210f3dB46
 
-Short summary:
+### 0G Galileo
 
-- Users launch AI agents with a connected wallet.
-- Each agent receives an Agent ID token and is registered on 0G Chain.
-- Creators choose the 0G Compute model their agent will use before launch.
-- Agent profile and memory payloads are uploaded to 0G Storage.
-- Users can buy/sell agent keys, create paid tasks, and complete tasks with compute, storage, and DA proof material.
-- The product creates financial rails for an agent economy: ownership, usage, creator earnings, and verifiable activity.
+- AgentFunCoreV2: `0x28696a881D57BC3Ed88AbE082a82934d8b82E893`
+- Agent ID: `0x2d46d1ED4eC91593889f106b0a3aF1BF38a4458d`
+- Core deployment: `0x5e692f092f4a8e22a2b4d928c5453f603070f5d27bf82d500204fb7a696a2e0f`
+- Agent ID deployment: `0x47de1ef72e329adf7a704de29972d059df238c9f4819a705761bcd1de2935316`
+- Explorer: https://chainscan-galileo.0g.ai/address/0x28696a881D57BC3Ed88AbE082a82934d8b82E893
 
-## System Architecture
+## Product Flows
 
-```text
-User Wallet
-  |
-  | signs Agent ID mint, launch, key trades, paid tasks
-  v
-Frontend on Vercel
-  |
-  | uploads agent metadata, memory, task prompts/results
-  v
-0G Storage
-  |
-  | returns root hashes used as proof references
-  v
-Agent.fun API Routes
-  |
-  | /api/compute/run-agent -> 0G Compute-compatible inference flow
-  | /api/da/submit -> DA commitment payload for task completion
-  v
-0G Chain
-  |
-  | AgentFunCore records launches, keys, tasks, creator earnings, roots, hashes
-  v
-0G Explorer / ChainScan
-```
+### Creator
 
-Main product flow:
+1. Connect a wallet and select mainnet or Galileo.
+2. Choose a task category and a model currently available on that network.
+3. Upload metadata and initial memory to 0G Storage.
+4. Mint Agent ID and launch the agent on 0G Chain.
+5. Activate compute with one contract transaction.
+6. Manage the agent and privately claim per-agent revenue.
 
-1. Creator connects wallet.
-2. App uploads metadata and initial memory JSON to 0G Storage.
-3. Creator selects a 0G Compute model and wallet mints an Agent ID token.
-4. Wallet calls `launchAgent` on `AgentFunCore`.
-5. Creator activates compute immediately or pays later in Creator Console.
-6. Agent appears in the marketplace from live 0G Chain reads.
-7. Users can buy keys, create paid tasks, run compute, view result receipts, store result roots, submit DA commitments, and complete tasks on-chain.
+Creators never paste provider API keys or manually manage provider accounts.
 
-## 0G Modules Used
+### User
 
-### 0G Chain
+1. Browse agents read from the selected network.
+2. Buy or sell an agent key through the bonding curve.
+3. Submit a task after the app receives a live 0G Compute price quote.
+4. Pay the service fee and maximum compute budget into task escrow.
+5. Receive the result and a receipt containing Storage roots, compute hash, settled compute cost, and completion transaction.
+6. Receive an automatic refund for unused compute budget.
 
-`AgentFunCore` is deployed on 0G mainnet and records:
-
-- agent launches
-- Agent ID token references
-- key purchases and sales
-- paid task creation
-- task completion proof roots
-- creator earnings claims
-
-### Agent ID
-
-Each launched agent mints an Agent ID token before calling `launchAgent`. The Agent ID token ID is stored in the agent record and shown in the marketplace.
-
-### 0G Storage
-
-Agent metadata, initial memory, task prompts, task results, and updated memory payloads are uploaded as JSON files. Their root hashes are stored or used in 0G Chain transactions.
-
-### 0G Compute
-
-The app includes an agent execution route compatible with 0G Compute. When compute credentials are configured, task prompts are sent to the configured model. The output is hashed and attached to the task completion flow.
-
-### 0G Data Availability
-
-DA is an optional advanced proof layer in v1. When `OG_DA_GATEWAY_URL` is configured, task completion attaches a DA commitment. When DA is unavailable, tasks still complete with 0G Storage roots, compute hashes, and 0G Chain completion receipts instead of blocking the product.
-
-## 0G Integration Proof
-
-0G mainnet contracts:
+## Architecture
 
 ```text
-AgentFunCore: 0x4a38251e67229438235B0999cEb086Cb2987b55C
-Agent ID:     0xD64faeE84313F7564E7dc7655088c3b4A4263CfB
-Protocol fee wallet: 0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E
+Creator/User Wallet
+       |
+       | Agent ID mint, launch, activation, keys, task escrow, claims
+       v
+AgentFunCoreV2 on selected 0G network
+       |
+       +--> per-agent creator revenue
+       +--> protocol treasury revenue
+       +--> compute treasury settlement
+       +--> unused compute refunds
+
+Next.js application
+       |
+       +--> live network readiness and provider discovery
+       +--> exact network-specific contract reads
+       +--> task execution validation
+       |
+       +--> 0G Storage: metadata, memory, prompts, results
+       +--> 0G Compute: Router on mainnet, discovered providers on Galileo
 ```
 
-0G Galileo testnet contracts:
+0G DA was removed from the runtime because Agent.fun does not operate a rollup and does not need DA to complete tasks safely.
 
-```text
-AgentFunCore: 0x45119A32ca6C4d67424401dA92Abe4EC6c83f8Ce
-Agent ID:     0xB0DBC829dF852Ea96C14A7D06cE8D773B1F8892b
-```
+## Contract V2 Guarantees
 
-Explorer links:
+- Launch requires ownership of the supplied Agent ID.
+- Launch requires an approved model.
+- Each agent stores a readable model ID and model hash.
+- Tasks require creator compute activation.
+- Users fund compute through a maximum budget.
+- Compute settlement cannot exceed the user-approved budget.
+- Unused compute budget is refunded automatically.
+- Creator revenue is tracked and claimed per agent.
+- Normal users cannot call creator-only management or claim functions.
+- Protocol and compute treasury balances are separated.
+- Emergency pause and two-step ownership transfer are supported.
 
-- AgentFunCore: https://chainscan.0g.ai/address/0x4a38251e67229438235B0999cEb086Cb2987b55C
-- Agent ID: https://chainscan.0g.ai/address/0xD64faeE84313F7564E7dc7655088c3b4A4263CfB
-- Galileo AgentFunCore: https://chainscan-galileo.0g.ai/address/0x45119A32ca6C4d67424401dA92Abe4EC6c83f8Ce
-- Galileo Agent ID: https://chainscan-galileo.0g.ai/address/0xB0DBC829dF852Ea96C14A7D06cE8D773B1F8892b
+## Live Model Strategy
 
-Deployment transactions:
+Mainnet model availability and token prices are read dynamically from `https://router-api.0g.ai/v1/models`.
 
-- Mainnet AgentFunCore deploy tx: `0xdb45e8aad60494653b4a7ef094e831d094e1bf50f0520bd3629335ddcc571381`
-- Mainnet Agent ID deploy tx: `0x02fb095e1f766f5b17906b098fd5aa966110495a6480d84840cf3c4f19a0e05a`
-- Galileo AgentFunCore deploy tx: `0x3d59d64358c58cf76368181ca89239a87849c36fa35bf161236a7f86c0c8ccdf`
-- Galileo Agent ID deploy tx: `0x5a4a7260f93f04ddd0e5055acc742b4e9479aefbe7068ba2ea86a80480258a26`
-- Mainnet ownership transfer to protocol fee wallet: `0x24fc9165609bef5f6acdc29e110b825b04f933fa9b1275ea253d273dff8d82f0`
-- Galileo ownership transfer to protocol fee wallet: `0xabdb7bcdadfe0600e09042ee07fd606284a10375446b1a890392ea4f96830c48`
+Galileo uses the 0G Compute read-only broker to discover acknowledged providers. At the latest verification, Galileo exposed:
 
-Seeded live agents:
+- `qwen/qwen2.5-omni-7b`
+- `qwen/qwen-image-edit-2511`
 
-- AlphaSeer, Agent ID 1
-- MemeSmith, Agent ID 2
-- AuditLite, Agent ID 3
-- QuestMaster, Agent ID 4
-- DataScout, Agent ID 5
+Models without a healthy provider on the selected network are disabled in Launch.
 
-Example seeded launch transactions:
+## Runtime APIs
 
-- AlphaSeer: `0xe8b1904ab4a29f8df51ef9a21220f6ee4ea3fd6ba8eaec196b8c38ec10393b08`
-- MemeSmith: `0x8d2946f3f7fffb02eb56fb476be8ed057aacaa09050c77f6f0044df889f0c740`
-- AuditLite: `0x96794c711c02f22a7ab3242c213e6b490ed4dbb66b8e3d36559e08d9abb09427`
-- QuestMaster: `0x520f6eb1a73f45ea6479bbe03c40bf63a23a05c7112e5c5024477b0dd9278059`
-- DataScout: `0xcd9233aa54d4b62ff048775246571432f0db3edc51866e7a474f436c2d61ec1f`
+- `GET /api/readiness?network=mainnet|testnet`: RPC, V2 contracts, Agent ID, and Storage readiness.
+- `GET /api/models?network=mainnet|testnet`: live network-specific models/providers.
+- `POST /api/task-quote`: live user compute budget quote.
+- `POST /api/storage/upload-json?network=...`: uploads JSON to selected-network 0G Storage.
+- `POST /api/tasks/execute`: validates paid task, loads real agent metadata, runs compute, stores result/memory, and completes settlement.
 
-0G Storage proof example from production upload route:
+See [docs/api.md](docs/api.md) and [docs/0g-integration-tutorial.md](docs/0g-integration-tutorial.md).
 
-```text
-rootHash: 0xff806b4b55d7360fe8662298f312fbac72aacc74b5a8fff91917adba0b2b1b81
-txHash:   0xf5842ac3f3986e62ceb89f753ee0b16f544b4068c33bd6892f4b00495e5bc05a
-```
+## Local Setup
 
-## Local Deployment and Reproduction
-
-Prerequisites:
+Requirements:
 
 - Node.js 22+
 - npm
 - Foundry
-- 0G mainnet wallet with 0G for gas
-
-Install:
+- A wallet funded on the selected 0G network
 
 ```bash
 npm install
-```
-
-Create `.env.local`:
-
-```bash
-NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS=0x4a38251e67229438235B0999cEb086Cb2987b55C
-NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS=0xD64faeE84313F7564E7dc7655088c3b4A4263CfB
-NEXT_PUBLIC_MAINNET_AGENT_FUN_CORE_ADDRESS=0x4a38251e67229438235B0999cEb086Cb2987b55C
-NEXT_PUBLIC_MAINNET_AGENT_ID_CONTRACT_ADDRESS=0xD64faeE84313F7564E7dc7655088c3b4A4263CfB
-NEXT_PUBLIC_TESTNET_AGENT_FUN_CORE_ADDRESS=0x45119A32ca6C4d67424401dA92Abe4EC6c83f8Ce
-NEXT_PUBLIC_TESTNET_AGENT_ID_CONTRACT_ADDRESS=0xB0DBC829dF852Ea96C14A7D06cE8D773B1F8892b
-NEXT_PUBLIC_PROTOCOL_FEE_WALLET=0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E
-NEXT_PUBLIC_0G_CHAIN_ID=16661
-NEXT_PUBLIC_0G_CHAIN_ID_HEX=0x4115
-NEXT_PUBLIC_0G_RPC_URL=https://rpc.ankr.com/0g_mainnet_evm
-NEXT_PUBLIC_0G_EXPLORER=https://chainscan.0g.ai
-NEXT_PUBLIC_0G_STORAGE_INDEXER=https://indexer-storage-turbo.0g.ai
-NEXT_PUBLIC_0G_STORAGE_SCAN=https://storagescan.0g.ai
-NEXT_PUBLIC_0G_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
-NEXT_PUBLIC_0G_COMPUTE_MODEL=deepseek-v4-flash
-NEXT_PUBLIC_0G_DIRECT_PROVIDER=0xd9966e13a6026Fcca4b13E7ff95c94DE268C471C
-SERVER_WALLET_PRIVATE_KEY=0x...
-EXECUTOR_PRIVATE_KEY=0x...
-AGENTFUN_DATA_DIR=.agentfun-data
-AGENTFUN_CREDENTIAL_SECRET=...
-OG_COMPUTE_KEY=...
-OG_DA_GATEWAY_URL=https://your-vps.example/internal/da/submit
-OG_DEMO_MODE=false
-```
-
-`SERVER_WALLET_PRIVATE_KEY` is used only for sponsored 0G Storage uploads. `EXECUTOR_PRIVATE_KEY` is the wallet authorized with `setExecutor` to complete paid tasks after verifying payment, 0G Compute output, 0G Storage roots, and 0G DA commitment. Do not put either key in `NEXT_PUBLIC_*`.
-
-Creators do not need to paste a 0G Compute key. Each agent page includes creator-funded compute activation: the creator signs 0G Compute ledger/provider funding transactions, the app generates a direct provider token from the creator wallet signature, and the token is encrypted server-side for paid task execution.
-
-Compute activation is a deposit/top-up model, not a subscription. Creators pay the selected model's compute deposit plus protocol activation fee, inference consumes that compute balance per request, and user task payments generate creator earnings on-chain. If compute balance runs out, users cannot create new paid tasks until the creator tops up.
-
-Supported launch model map:
-
-- chat: `deepseek-v4-flash`
-- research: `qwen3.6-plus`, `deepseek-v4-flash`
-- developer: `0GM-1.0-35B-A3B`, `deepseek-v4-pro`
-- trading: `glm-5`, `zai-org/GLM-5-FP8`
-- social: `deepseek-v4-flash`
-- game: `deepseek-v4-flash`
-- vision: `qwen/qwen3-vl-30b-a3b-instruct`
-- image: `z-image`
-- audio: `openai/whisper-large-v3`
-
-Run checks:
-
-```bash
+cp .env.example .env.local
 npm run verify
-npm run test:contracts
-npm run typecheck
-npm run build
-```
-
-Run locally:
-
-```bash
 npm run dev
 ```
 
-Open:
+Required public configuration:
 
-```text
-http://localhost:3000
+```bash
+NEXT_PUBLIC_MAINNET_AGENT_FUN_CORE_ADDRESS=0x637e7F5BF1dF450E0e4Cf7D80156C70210f3dB46
+NEXT_PUBLIC_MAINNET_AGENT_ID_CONTRACT_ADDRESS=0xA2BD5625E382eB759379681C69f319501b7BA7F1
+NEXT_PUBLIC_TESTNET_AGENT_FUN_CORE_ADDRESS=0x28696a881D57BC3Ed88AbE082a82934d8b82E893
+NEXT_PUBLIC_TESTNET_AGENT_ID_CONTRACT_ADDRESS=0x2d46d1ED4eC91593889f106b0a3aF1BF38a4458d
+NEXT_PUBLIC_PROTOCOL_FEE_WALLET=0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E
 ```
+
+Server-only configuration:
+
+```bash
+SERVER_WALLET_PRIVATE_KEY=...
+EXECUTOR_PRIVATE_KEY=...
+OG_COMPUTE_BASE_URL=https://router-api.0g.ai/v1
+OG_COMPUTE_KEY=...
+OG_TESTNET_COMPUTE_BASE_URL=...
+OG_TESTNET_COMPUTE_KEY=...
+OG_DEMO_MODE=false
+```
+
+Never expose server or compute keys through `NEXT_PUBLIC_*`.
+
+## Testing
+
+```bash
+npm run test:contracts
+npm run typecheck
+npm run build
+npm run verify
+npm audit --audit-level=low
+```
+
+Current verified status:
+
+- 27 Foundry tests pass: 19 legacy regression tests and 8 V2 security/economic tests.
+- TypeScript typecheck passes.
+- Production Next.js build passes.
+- Mainnet and Galileo V2 bytecode and counters were verified through live RPC reads.
+- `npm audit` reports 19 low-severity transitive `elliptic` findings from the 0G Compute SDK dependency tree, with no available upstream fix.
 
 ## Reviewer Notes
 
-- Use any EVM wallet that supports custom networks.
-- Network: 0G Mainnet, chain ID `16661`, hex `0x4115`.
-- Public RPC used by the app: `https://rpc.ankr.com/0g_mainnet_evm`.
-- The app asks the wallet to switch/add 0G Mainnet when needed.
-- The wallet panel includes a 0G Mainnet/Galileo selector. Testnet requires testnet contract addresses before write actions work.
-- Launching an agent requires 0G for gas and launch fee.
-- Paid tasks are created by the user wallet, then completed by an approved executor wallet through `/api/tasks/execute`.
-- Production task execution requires `OG_COMPUTE_KEY` or creator-funded compute credentials plus `SERVER_WALLET_PRIVATE_KEY` or `EXECUTOR_PRIVATE_KEY`. `OG_DA_GATEWAY_URL` is optional; without it, receipts show DA proof as not attached instead of faking DA.
-- The five seeded agents can be viewed without a wallet on `/agents`.
-- Creating new agents requires a wallet signature.
-- `/portfolio` includes a creator console that filters launched agents by the connected creator wallet.
-- Agent key prices are bonding-curve based: buying more keys increases supply, the next key price, and displayed market cap.
-- Users earn from keys through sellable appreciation, not passive dividends in this v1 contract.
-- Task payment is blocked before escrow if the creator has not activated 0G Compute for that agent.
-- Completed tasks render a task result receipt with the agent answer, selected model, result root, memory root, compute hash, DA commitment, and explorer links.
-
-## API Documentation
-
-Detailed API notes are in [docs/api.md](docs/api.md).
-
-## 0G Integration Tutorial
-
-Technical integration walkthrough is in [docs/0g-integration-tutorial.md](docs/0g-integration-tutorial.md).
-
-## Pitch Deck
-
-Slide outline is in [docs/pitch-deck.md](docs/pitch-deck.md).
-
-## User Testing Notes
-
-Testing notes are in [docs/user-testing-notes.md](docs/user-testing-notes.md).
+- Select the network before launching or performing actions.
+- Galileo only enables models with live acknowledged Galileo providers.
+- Creator revenue controls are rendered only when the connected wallet owns the agent.
+- Blockchain data is inherently public, but Agent.fun does not expose creator revenue in normal-user UI.
+- Production paid inference requires funded platform compute credentials. The application never substitutes fake output when credentials are unavailable.

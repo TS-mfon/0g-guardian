@@ -5,14 +5,17 @@ import { AgentTaskPanel } from "@/components/AgentTaskPanel";
 import { CreatorComputeKeyPanel } from "@/components/CreatorComputeKeyPanel";
 import { SiteNav } from "@/components/SiteNav";
 import { loadAgentsFromChain } from "@/lib/agentfun";
-import { clientConfig } from "@/lib/config";
+import { getZeroGNetwork } from "@/lib/config";
 import { shortHash } from "@/lib/hash";
+import { getServerNetwork } from "@/lib/server-network";
 
 export const dynamic = "force-dynamic";
 
 export default async function AgentPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const agents = await loadAgentsFromChain();
+  const networkKey = await getServerNetwork();
+  const network = getZeroGNetwork(networkKey);
+  const agents = await loadAgentsFromChain(networkKey);
   const agent = agents.find((item) => item.id === slug);
   if (!agent) notFound();
 
@@ -42,9 +45,9 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
         </div>
         <AgentTaskPanel agent={agent} />
       </section>
-      <CreatorComputeKeyPanel agentId={agent.id} creator={agent.creator} category={agent.category} />
+      <CreatorComputeKeyPanel agentId={agent.id} creator={agent.creator} category={agent.category} computeActive={agent.computeActive} />
       <section className="proof-grid proof-grid-clean">
-        <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
+        <a href={`${network.explorerUrl}/address/${network.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
           <span>On-chain agent</span><strong>Agent #{agent.id}</strong><p>Registered on 0G Chain under Agent ID #{agent.agentIdTokenId}.</p>
         </a>
         <div><span>Metadata root</span><strong>{shortHash(agent.metadataRoot)}</strong><p>Profile and storage-backed launch package.</p></div>

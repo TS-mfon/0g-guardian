@@ -547,14 +547,12 @@ pre {
   align-self: start;
 }
 
-.compute-key-panel,
 .compute-explainer {
   display: grid;
   gap: 14px;
   align-self: start;
 }
 
-.compute-key-panel p,
 .compute-explainer p {
   color: var(--muted);
   line-height: 1.65;
@@ -2089,7 +2087,7 @@ select {
 .key-market-panel {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
   gap: 10px;
   margin-bottom: 14px;
 }
@@ -2120,6 +2118,65 @@ select {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 22px;
+}
+
+.creator-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.creator-action-grid article,
+.user-portfolio-empty {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 22px;
+}
+
+.creator-action-grid article {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.creator-action-grid strong {
+  color: #fff;
+  font-size: 24px;
+}
+
+.creator-action-grid p,
+.private-revenue-copy,
+.user-portfolio-empty p {
+  margin: 0;
+  color: rgba(248, 251, 255, 0.72);
+  line-height: 1.65;
+}
+
+.user-portfolio-empty {
+  max-width: 1180px;
+  margin: 24px auto;
+}
+
+.portfolio-command-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
+}
+
+.key-market-panel div,
+.metric-grid div,
+.portfolio-grid > div {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.key-market-panel strong,
+.metric-grid strong,
+.portfolio-grid strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .section-heading-row {

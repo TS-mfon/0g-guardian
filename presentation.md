@@ -1,218 +1,136 @@
-# Agent.fun on 0G: Weekly Product and Engineering Update
+# Agent.fun Weekly Product and Engineering Update
 
-## 1. Executive Summary
+## Executive Summary
 
-This week Agent.fun moved closer to a real 0G-native agent economy: creators can launch Agent ID-backed agents, users interact with live on-chain agents, task execution is tied to creator-funded 0G Compute, and task receipts carry storage roots, compute hashes, and completion transactions.
+This week Agent.fun moved from a prototype marketplace into a real, multi-network agent economy on 0G. We audited the complete launch, wallet, compute, task, revenue, and network flows; fixed the highest-impact failures; deployed a corrected V2 contract on Galileo and mainnet; and rebuilt the frontend around truthful network-specific state.
 
-The biggest product shift is that Agent.fun is no longer just a marketplace screen. It is now a launch, activation, usage, key-market, and creator-management system for AI agents on 0G.
+The product is now designed around a simple promise:
 
-## 2. Product Direction
+> Creators launch and activate useful agents. Users pay for real tasks. 0G proves identity, memory, execution, payments, and settlement.
 
-Agent.fun is designed as a pump.fun-style launchpad for useful AI agents:
+## What We Changed
 
-- creators launch agents
-- creators choose compatible 0G Compute models
-- users buy agent keys
-- users run paid tasks
-- agents return useful outputs
-- creators manage compute and claim creator earnings
-- users inspect proof-linked receipts
+### Contract and Economic Layer
 
-The product avoids fake state: Arena and agent pages use live 0G Chain reads, and proof values only appear after confirmed actions.
+- Built and deployed `AgentFunCoreV2`.
+- Added Agent ID ownership verification during launch.
+- Bound each agent to a readable model ID and approved model hash.
+- Added creator activation before users can fund tasks.
+- Changed compute billing from creator-managed provider accounts to user-funded task budgets.
+- Added automatic unused-compute refunds.
+- Separated protocol treasury, compute treasury, and per-agent creator revenue.
+- Added creator-only per-agent revenue claims.
+- Removed mandatory DA commitments that previously blocked task completion.
+- Preserved legacy contracts as historical read-only deployments.
 
-## 3. 0G Integration Progress
+### Network Reliability
 
-### 0G Chain
+- Removed global mainnet assumptions from chain reads and task execution.
+- Added cookie-persisted selected network for server-rendered pages.
+- Added selected-network contract, RPC, Storage, and Compute handling.
+- Added live readiness checks for RPC, V2 contract bytecode, Agent ID, and Storage.
+- Deployed and verified V2 on 0G Mainnet and Galileo.
 
-`AgentFunCore` records launches, key trades, paid tasks, task completion, creator earnings, pause states, and executor permissions.
+### Wallet UX
 
-Mainnet:
+- Added one root wallet provider so wallet state survives route navigation.
+- Stopped the connected nav button from repeatedly requesting account access.
+- Separated refresh, network switch, connect, and disconnect behavior.
+- Prevented transient empty account events from clearing remembered wallet intent.
+- Improved rejection, wrong-network, insufficient-funds, and RPC error messages.
 
-- AgentFunCore: `0x4a38251e67229438235B0999cEb086Cb2987b55C`
-- Agent ID: `0xD64faeE84313F7564E7dc7655088c3b4A4263CfB`
+### Real Compute and Agent Behavior
 
-Galileo:
+- Added live Router model and pricing discovery on mainnet.
+- Added live direct-provider discovery on Galileo.
+- Verified Galileo currently exposes Qwen Omni and Qwen Image Edit providers.
+- Disabled models that are unavailable on the selected network.
+- Added live task compute quotes before users pay.
+- Changed execution to load the creator’s actual metadata and system prompt from 0G Storage.
+- Removed creator API-key onboarding and ephemeral creator-key storage.
+- Added direct-provider response settlement through `processResponse` on Galileo.
+- Corrected task receipts so `memoryRootBefore` and persisted memory history reference the agent's real on-chain memory root.
+- Kept paid task transaction links visible when downstream execution is pending or fails, preserving a path to retry or refund.
 
-- AgentFunCore: `0x45119A32ca6C4d67424401dA92Abe4EC6c83f8Ce`
-- Agent ID: `0xB0DBC829dF852Ea96C14A7D06cE8D773B1F8892b`
+### Creator Privacy and UI
 
-Protocol wallet:
+- Creator revenue controls no longer render for normal users.
+- Portfolio only renders Creator Console for wallets that launched agents.
+- Revenue is displayed and claimed per agent.
+- Activation and revenue claims use independent state machines.
+- Fixed the overflowing Task Volume/key-market card.
+- Added responsive auto-fit metrics and safer card boundaries.
+- Scoped Creator Console pending tasks to the connected creator's own agents.
+- Limited Compare to agents that are both active and compute-activated, before any wallet payment is requested.
 
-- `0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E`
+## Current Architecture
 
-### Agent ID
+```text
+Creator wallet
+  -> upload profile and memory to 0G Storage
+  -> mint Agent ID
+  -> launch approved model on AgentFunCoreV2
+  -> activate compute
 
-Agent launches mint an Agent ID token before registration. The Agent ID token ID is stored in the agent record and displayed on the agent page.
+User wallet
+  -> request live model quote
+  -> escrow service fee and compute budget
+  -> verified executor loads real metadata from 0G Storage
+  -> 0G Compute runs the selected agent
+  -> result and memory upload to 0G Storage
+  -> V2 settles compute, creator revenue, protocol revenue, and refund
+```
 
-### 0G Storage
+## Live V2 Deployments
 
-The app stores:
+### Mainnet
 
-- agent metadata
-- initial memory
-- task prompts
-- task results
-- updated memory snapshots
+- AgentFunCoreV2: `0x637e7F5BF1dF450E0e4Cf7D80156C70210f3dB46`
+- Agent ID: `0xA2BD5625E382eB759379681C69f319501b7BA7F1`
+- Core deploy transaction: `0xe962358bae9639b9ccae8e1cf381a1d11c9d2b2356a9db4dae841576951831da`
 
-Storage roots are used in launch previews and task receipts.
+### Galileo
 
-### 0G Compute
+- AgentFunCoreV2: `0x28696a881D57BC3Ed88AbE082a82934d8b82E893`
+- Agent ID: `0x2d46d1ED4eC91593889f106b0a3aF1BF38a4458d`
+- Core deploy transaction: `0x5e692f092f4a8e22a2b4d928c5453f603070f5d27bf82d500204fb7a696a2e0f`
 
-Creators now choose the model their agent will use. Compute activation is creator-funded, and users are blocked from paying for a task until the creator activates compute.
+Protocol revenue is assigned to `0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E`.
 
-### Optional 0G DA
+## Testing and Verification
 
-0G DA is now treated as an optional advanced proof layer. If configured, task receipts attach DA commitments. If unavailable, the core task still completes with Storage roots, compute hash, and 0G Chain completion.
+- 27 Foundry tests passing.
+- V2 tests cover Agent ID ownership, approved models, activation, per-agent claims, user-funded compute, maximum compute spend, refunds, and expiration.
+- TypeScript typecheck passing.
+- Production Next.js build passing.
+- Mainnet and Galileo contract bytecode verified through live RPC.
+- Mainnet treasury address verified through live contract read.
+- Galileo Compute providers and prices verified through the official 0G Compute SDK.
+- Live task quotes verified for Galileo Qwen Omni and mainnet GLM-5.
+- Production readiness endpoints correctly block paid tasks while real funded Compute credentials are absent.
 
-## 4. UI/UX Updates
+## How to Demo
 
-Completed or planned in this sprint:
+1. Open Agent.fun and switch between Mainnet and Galileo.
+2. Show live model availability changing by network.
+3. Open Launch and explain that unavailable models are disabled.
+4. Launch an agent and show real Storage roots only after confirmation.
+5. Open the agent as a normal wallet and show no creator revenue.
+6. Connect the creator wallet and show private activation and per-agent claim controls.
+7. Activate compute.
+8. Submit a paid task and explain live pricing, escrow, compute settlement, and refund.
+9. Show task output, Storage roots, compute hash, and completion transaction.
+10. Open Arena and compare two active agents with the same paid workflow.
 
-- creator/user UI separation
-- creator-only compute activation
-- creator-only earnings claim controls
-- cleaner wallet rejection messages
-- better card spacing and padding
-- readable dropdowns
-- no fake agents in Arena
-- no random proof hashes after rejected transactions
-- task result receipts with answer and proof trail
-- model matrix for launch clarity
+## Remaining Production Work
 
-## 5. Compute Model Strategy
+- Fund and configure the platform mainnet Router account.
+- Fund and configure the Galileo direct-provider account.
+- Move task orchestration from Vercel functions to the VPS for durable queues and retries.
+- Add end-to-end browser tests and continuous health monitoring.
+- Add specialized image, vision, and audio task input surfaces.
+- Complete external smart-contract review before meaningful value is deposited.
 
-Model-task binding prevents creators from launching agents with the wrong model type.
+## Team Pitch
 
-- chat: `deepseek-v4-flash`
-- research: `qwen3.6-plus`, `deepseek-v4-flash`
-- developer: `0GM-1.0-35B-A3B`, `deepseek-v4-pro`
-- trading: `glm-5`, `zai-org/GLM-5-FP8`
-- social: `deepseek-v4-flash`
-- game: `deepseek-v4-flash`
-- vision: `qwen/qwen3-vl-30b-a3b-instruct`
-- image: `z-image`
-- audio: `openai/whisper-large-v3`
-
-Trading models require TEE-ready execution.
-
-## 6. Creator Workflow
-
-1. Connect wallet.
-2. Pick task type.
-3. Pick compatible 0G Compute model.
-4. Upload metadata and memory to 0G Storage.
-5. Mint Agent ID.
-6. Launch on 0G Chain.
-7. Activate compute now or later.
-8. Manage agents from Portfolio.
-9. Claim creator earnings from creator-only UI.
-
-## 7. User Workflow
-
-1. Browse live agents.
-2. Review key price, market cap, readiness, and task count.
-3. Buy keys.
-4. Submit paid task only when compute is active.
-5. Receive result receipt.
-6. Inspect completion transaction and proof roots.
-
-## 8. Compare Lab
-
-Arena now needs a real compare workflow:
-
-- select two live agents
-- run the same paid task against both
-- execute both through the task pipeline
-- display two receipts side by side
-- let the user compare quality, model, roots, hashes, and completion transactions
-
-## 9. Testing Status
-
-Fresh local verification from this week:
-
-- `npm run test:contracts`: 16 passed, 0 failed
-- `npm run typecheck`: passed
-- `npm run build`: passed
-- `npm audit --audit-level=low`: reports 19 low-severity transitive `elliptic` issues through dependency tree, no upstream fix available
-
-## 10. Contract Coverage
-
-Current tests cover:
-
-- launch
-- launch fee accounting
-- duplicate Agent ID rejection
-- key buy/sell
-- key price pump
-- task creation
-- authorized executor completion
-- requester cannot fake completion
-- creator cannot complete unless executor
-- expired task refunds
-- expired task cannot complete
-- open task must be marked running before completion
-- pause states
-- closed-form key pricing
-- creator-only memory updates
-- paginated agent/task IDs
-
-Next tests to add:
-
-- creator claim after key purchase
-- creator claim after completed task
-- exact claim transfer
-- claim zero behavior
-- sell reserve safety
-- complete refunded task rejection
-- overpayment accounting
-
-## 11. Known Risks
-
-- 0G DA has no guaranteed public REST URL, so it should remain optional unless the 0G team provides a hosted endpoint or we operate our own adapter.
-- Some 0G Compute SDK transitive dependencies still report low-severity audit issues with no available fix.
-- Network-aware API execution must remain strict so mainnet/testnet task IDs cannot collide.
-- Creator compute activation must never leak provider tokens or private keys.
-
-## 12. Next Sprint Priorities
-
-P0:
-
-- make DA optional in task completion
-- restore creator-only earnings claim UI
-- expose full model matrix
-- fix model-task validation
-- improve card padding/dropdowns
-- expand docs into subpages
-- create and ship this presentation
-
-P1:
-
-- add compare execution flow
-- add revenue claim tests
-- add network-aware compute key storage
-- add API tests for task execution failures
-- improve mobile layouts
-
-P2:
-
-- provider health checks
-- richer creator analytics
-- public task history explorer
-- optional DA gateway adapter
-- agent leaderboard
-
-## 13. Demo Script
-
-1. Open landing page and explain Agent.fun as a 0G-native agent launchpad.
-2. Open Launch and show task type/model binding.
-3. Launch or inspect an existing live agent.
-4. Open agent page and show key market.
-5. Show creator-only compute activation.
-6. Run or explain paid task flow.
-7. Show task result receipt.
-8. Open Portfolio and show creator management plus earnings claim controls.
-9. Open Docs and show the 0G integration sections.
-
-## 14. Team Ask
-
-We need to finish the remaining implementation backlog, verify a live task execution path, polish UI spacing, and prepare final HackQuest submission assets with screenshots, demo clip, repository link, deployed app link, contract addresses, and X post.
+Agent.fun is not another AI chat interface. It is an economic launch layer for owned, paid, and verifiable AI services. 0G is essential to the product because it provides the identity, storage, compute marketplace, and settlement chain needed to turn an agent into a durable on-chain business.

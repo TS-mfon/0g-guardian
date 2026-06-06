@@ -1,6 +1,6 @@
 import { Contract, JsonRpcProvider, ethers } from "ethers";
 import { agentFunCoreAbi } from "@shared/index";
-import { clientConfig } from "./config";
+import { getZeroGNetwork, isAddressConfigured, ZeroGNetworkKey } from "./config";
 
 export interface AgentView {
   id: string;
@@ -12,8 +12,11 @@ export interface AgentView {
   metadataRoot: string;
   memoryRoot: string;
   capabilityHash: string;
+  modelId: string;
+  modelHash: string;
   createdAt: string;
   active: boolean;
+  computeActive: boolean;
   taskCount: string;
   totalRevenue: string;
   keySupply: string;
@@ -30,30 +33,32 @@ export interface TaskView {
   requester: string;
   executor: string;
   fee: string;
+  computeBudget: string;
+  actualComputeCost: string;
   status: number;
   createdAt: string;
   deadline: string;
 }
 
-export function readProvider() {
-  return new JsonRpcProvider(clientConfig.rpcUrl, clientConfig.chainId);
+export function readProvider(networkKey: ZeroGNetworkKey = "mainnet") {
+  const network = getZeroGNetwork(networkKey);
+  return new JsonRpcProvider(network.rpcUrl, network.chainId);
 }
 
-export function readAgentFunContract() {
-  if (!/^0x[a-fA-F0-9]{40}$/.test(clientConfig.agentFunCoreAddress)) return null;
-  return new Contract(clientConfig.agentFunCoreAddress, agentFunCoreAbi, readProvider());
+export function readAgentFunContract(networkKey: ZeroGNetworkKey = "mainnet") {
+  const network = getZeroGNetwork(networkKey);
+  if (!isAddressConfigured(network.agentFunCoreAddress)) return null;
+  return new Contract(network.agentFunCoreAddress, agentFunCoreAbi, readProvider(networkKey));
 }
 
-export async function loadAgentsFromChain(): Promise<AgentView[]> {
-  const contract = readAgentFunContract();
+export async function loadAgentsFromChain(networkKey: ZeroGNetworkKey = "mainnet"): Promise<AgentView[]> {
+  const contract = readAgentFunContract(networkKey);
   if (!contract) return [];
   try {
     let ids: bigint[];
     try {
       ids = await contract.getAgentIds(0, 100);
-    } catch {
-      ids = await contract.getAllAgentIds();
-    }
+    } catch { ids = []; }
     const agents = await Promise.all(ids.map(async (id) => {
       const agent = await contract.getAgent(id);
       const keySupply = await contract.keySupply(id);
@@ -78,8 +83,11 @@ export async function loadAgentsFromChain(): Promise<AgentView[]> {
         metadataRoot: agent.metadataRoot,
         memoryRoot: agent.memoryRoot,
         capabilityHash: agent.capabilityHash,
+        modelId: agent.modelId,
+        modelHash: agent.modelHash,
         createdAt: agent.createdAt.toString(),
         active: agent.active,
+        computeActive: agent.computeActive,
         taskCount: agent.taskCount.toString(),
         totalRevenue: ethers.formatEther(agent.totalRevenue),
         keySupply: keySupply.toString(),
@@ -97,16 +105,14 @@ export async function loadAgentsFromChain(): Promise<AgentView[]> {
   }
 }
 
-export async function loadTasksFromChain(): Promise<TaskView[]> {
-  const contract = readAgentFunContract();
+export async function loadTasksFromChain(networkKey: ZeroGNetworkKey = "mainnet"): Promise<TaskView[]> {
+  const contract = readAgentFunContract(networkKey);
   if (!contract) return [];
   try {
     let ids: bigint[];
     try {
       ids = await contract.getTaskIds(0, 100);
-    } catch {
-      ids = await contract.getAllTaskIds();
-    }
+    } catch { ids = []; }
     const tasks = await Promise.all(ids.map(async (id) => {
       const task = await contract.getTask(id);
       return {
@@ -115,6 +121,8 @@ export async function loadTasksFromChain(): Promise<TaskView[]> {
         requester: task.requester,
         executor: task.executor,
         fee: ethers.formatEther(task.fee),
+        computeBudget: ethers.formatEther(task.computeBudget),
+        actualComputeCost: ethers.formatEther(task.actualComputeCost),
         status: Number(task.status),
         createdAt: task.createdAt.toString(),
         deadline: task.deadline.toString()

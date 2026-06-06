@@ -2,22 +2,22 @@ import { NextResponse } from "next/server";
 import { Contract, JsonRpcProvider, Wallet, ethers } from "ethers";
 import { agentFunCoreAbi, agentMemorySchema, agentMetadataSchema, taskPromptSchema } from "@shared/index";
 import { apiError, readJson } from "@/lib/api";
-import { clientConfig } from "@/lib/config";
+import { getZeroGNetwork, isAddressConfigured, ZeroGNetworkKey } from "@/lib/config";
+import { calculateActualComputeCost, getLiveComputePrice } from "@/lib/compute-pricing";
 import { hashJson } from "@/lib/hash";
 import { runAgentTask } from "@/lib/compute-client";
-import { loadCreatorComputeKeyForNetwork } from "@/lib/creator-compute-store";
-import { uploadBytesTo0GFromServer } from "@/lib/storage-server";
+import { downloadJsonFrom0G, uploadBytesTo0GFromServer } from "@/lib/storage-server";
 
 function bytes32(value: string) {
   return ethers.zeroPadValue(value as `0x${string}`, 32);
 }
 
-async function uploadJson(payload: unknown) {
+async function uploadJson(payload: unknown, network: ZeroGNetworkKey) {
   const encoded = new TextEncoder().encode(JSON.stringify(payload, null, 2));
-  return uploadBytesTo0GFromServer(encoded);
+  return uploadBytesTo0GFromServer(encoded, network);
 }
 
-function executorWallet() {
+function executorWallet(networkKey: ZeroGNetworkKey) {
   const privateKey = (
     process.env.EXECUTOR_PRIVATE_KEY ??
     process.env.SERVER_WALLET_PRIVATE_KEY ??
@@ -26,27 +26,30 @@ function executorWallet() {
     ""
   ).trim();
   if (!privateKey) throw new Error("EXECUTOR_PRIVATE_KEY is not configured.");
-  const provider = new JsonRpcProvider(clientConfig.rpcUrl, clientConfig.chainId);
+  const network = getZeroGNetwork(networkKey);
+  const provider = new JsonRpcProvider(network.rpcUrl, network.chainId);
   return new Wallet(privateKey, provider);
 }
 
 export async function POST(request: Request) {
   try {
-    if (!/^0x[a-fA-F0-9]{40}$/.test(clientConfig.agentFunCoreAddress)) {
+    const body = await readJson(request, 96_000);
+    const networkKey: ZeroGNetworkKey = body.network === "testnet" ? "testnet" : "mainnet";
+    const network = getZeroGNetwork(networkKey);
+    if (!isAddressConfigured(network.agentFunCoreAddress)) {
       return NextResponse.json({ error: { code: "CONTRACT_NOT_CONFIGURED", message: "Agent.fun contract is not configured." } }, { status: 500 });
     }
 
-    const body = await readJson(request, 96_000);
     const taskId = BigInt(String(body.taskId ?? "0"));
     if (taskId === 0n) {
       return NextResponse.json({ error: { code: "INVALID_TASK", message: "A valid task ID is required." } }, { status: 400 });
     }
 
-    const metadata = agentMetadataSchema.parse(body.metadata);
     const prompt = taskPromptSchema.parse(body.prompt);
-    const wallet = executorWallet();
-    const contract = new Contract(clientConfig.agentFunCoreAddress, agentFunCoreAbi, wallet);
+    const wallet = executorWallet(networkKey);
+    const contract = new Contract(network.agentFunCoreAddress, agentFunCoreAbi, wallet);
     const task = await contract.getTask(taskId);
+    const agent = await contract.getAgent(task.agentId);
     const status = Number(task.status);
     if (status !== 1 && status !== 2) {
       return NextResponse.json({ error: { code: "TASK_NOT_OPEN", message: "This task is not open for execution." } }, { status: 409 });
@@ -68,15 +71,28 @@ export async function POST(request: Request) {
       await runningTx.wait();
     }
 
-    const network = String(body.network ?? "mainnet");
-    const creatorCompute = await loadCreatorComputeKeyForNetwork(prompt.agentId, network);
+    const metadata = agentMetadataSchema.parse(await downloadJsonFrom0G(String(agent.metadataRoot), networkKey));
+    if (metadata.creator.toLowerCase() !== String(agent.creator).toLowerCase()) {
+      throw new Error("Stored metadata creator does not match the on-chain agent.");
+    }
+    if (metadata.model.modelId !== String(agent.modelId)) {
+      throw new Error("Stored metadata model does not match the on-chain agent.");
+    }
+    const price = await getLiveComputePrice(networkKey, String(agent.modelId));
+    const apiKey = networkKey === "testnet" ? process.env.OG_TESTNET_COMPUTE_KEY : process.env.OG_COMPUTE_KEY;
+    const baseUrl = networkKey === "testnet" ? process.env.OG_TESTNET_COMPUTE_BASE_URL : process.env.OG_COMPUTE_BASE_URL;
     const result = await runAgentTask({
       metadata,
       prompt,
-      model: creatorCompute.model || String(body.model ?? clientConfig.computeModel),
-      apiKey: creatorCompute.apiKey,
-      baseUrl: creatorCompute.baseUrl
+      model: String(agent.modelId),
+      apiKey,
+      baseUrl
     });
+    if (networkKey === "testnet" && price.provider && result.chatId) {
+      const { createZGComputeNetworkBroker } = await import("@0gfoundation/0g-compute-ts-sdk");
+      const broker = await createZGComputeNetworkBroker(wallet);
+      await broker.inference.processResponse(price.provider, result.chatId, JSON.stringify(result.usage ?? {}));
+    }
     const computeHash = hashJson(result);
     const resultPayload = {
       version: "1.0",
@@ -87,7 +103,7 @@ export async function POST(request: Request) {
       computeProvider: result.provider,
       computeModel: result.model,
       computeHash,
-      memoryRootBefore: metadata.agentIdTokenId,
+      memoryRootBefore: String(agent.memoryRoot),
       memoryRootAfter: hashJson({ prompt: prompt.prompt, response: result.response, at: new Date().toISOString() }),
       createdAt: new Date().toISOString()
     };
@@ -95,7 +111,7 @@ export async function POST(request: Request) {
       version: "1.0",
       agentId: prompt.agentId,
       memoryIndex: Number(taskId),
-      previousMemoryRoot: String(task.promptRoot),
+      previousMemoryRoot: String(agent.memoryRoot),
       longTermSummary: `Task ${taskId.toString()} completed. ${result.response.slice(0, 180)}`,
       userPreferences: {},
       learnedFacts: [result.response.slice(0, 240)],
@@ -103,36 +119,10 @@ export async function POST(request: Request) {
       updatedAt: new Date().toISOString()
     });
 
-    const resultUpload = await uploadJson(resultPayload);
-    const memoryUpload = await uploadJson(memoryPayload);
-    let daCommitment = ethers.ZeroHash;
-    let daStatus: "attached" | "not_attached" = "not_attached";
-    const daResponse = await fetch(new URL("/api/da/submit", request.url), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        app: "agent.fun",
-        version: "1.0",
-        eventType: "task",
-        agentId: prompt.agentId,
-        taskId: taskId.toString(),
-        requester: prompt.requester,
-        executor: wallet.address,
-        resultRoot: resultUpload.rootHash,
-        memoryRoot: memoryUpload.rootHash,
-        computeHash
-      })
-    });
-    if (daResponse.ok) {
-      const da = await daResponse.json();
-      const candidate = String(da.commitment ?? da.blobHash ?? da.hash ?? "");
-      if (candidate.startsWith("0x")) {
-        daCommitment = bytes32(candidate);
-        daStatus = "attached";
-      }
-    }
+    const [resultUpload, memoryUpload] = await Promise.all([uploadJson(resultPayload, networkKey), uploadJson(memoryPayload, networkKey)]);
+    const actualComputeCost = calculateActualComputeCost(price, result.usage, BigInt(task.computeBudget));
 
-    const tx = await contract.completeTask(taskId, bytes32(resultUpload.rootHash), computeHash, daCommitment, bytes32(memoryUpload.rootHash));
+    const tx = await contract.completeTask(taskId, bytes32(resultUpload.rootHash), computeHash, bytes32(memoryUpload.rootHash), actualComputeCost);
     await tx.wait();
     return NextResponse.json({
       taskId: taskId.toString(),
@@ -142,8 +132,7 @@ export async function POST(request: Request) {
       resultRoot: resultUpload.rootHash,
       memoryRoot: memoryUpload.rootHash,
       computeHash,
-      daCommitment,
-      daStatus,
+      computeCost: actualComputeCost.toString(),
       runningTx: runningTxHash,
       completionTx: tx.hash
     });

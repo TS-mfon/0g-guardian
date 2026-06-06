@@ -1,10 +1,13 @@
 import { AgentMarketplace } from "@/components/AgentMarketplace";
 import { SiteNav } from "@/components/SiteNav";
-import { clientConfig } from "@/lib/config";
+import { getZeroGNetwork } from "@/lib/config";
+import { getServerNetwork } from "@/lib/server-network";
 
 export const dynamic = "force-dynamic";
 
-export default function ProofsPage() {
+export default async function ProofsPage() {
+  const networkKey = await getServerNetwork();
+  const network = getZeroGNetwork(networkKey);
   return (
     <main>
       <SiteNav />
@@ -17,17 +20,17 @@ export default function ProofsPage() {
         </p>
       </section>
       <section className="proof-grid proof-grid-clean">
-        <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
+        <a href={`${network.explorerUrl}/address/${network.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
           <span>Agent market</span><strong>Open contract</strong><p>Launches, keys, paid tasks, and creator settlement.</p>
         </a>
-        <a href={`${clientConfig.explorerUrl}/address/${clientConfig.agentIdContractAddress}`} target="_blank" rel="noreferrer">
+        <a href={`${network.explorerUrl}/address/${network.agentIdContractAddress}`} target="_blank" rel="noreferrer">
           <span>Agent identity</span><strong>Open Agent ID</strong><p>Ownership and identity records for launched agents.</p>
         </a>
         <div>
           <span>Storage proofs</span><strong>Shown per agent</strong><p>Metadata, memory, prompt, and result roots appear only after confirmed actions.</p>
         </div>
       </section>
-      <AgentMarketplace />
+      <AgentMarketplace networkKey={networkKey} />
     </main>
   );
 }
