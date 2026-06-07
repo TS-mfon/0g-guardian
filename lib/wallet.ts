@@ -82,18 +82,26 @@ export function setSelectedNetworkKey(key: ZeroGNetworkKey) {
   window.dispatchEvent(new CustomEvent("agentfun:network", { detail: { key } }));
 }
 
+function extractWalletErrorCode(error: unknown): number | undefined {
+  // ethers v6 wraps wallet errors in UNKNOWN_ERROR — the real code can be nested
+  // several levels deep depending on the wallet extension
+  const e = error as Record<string, any>;
+  return (
+    e?.code ??
+    e?.info?.error?.code ??
+    e?.data?.originalError?.code ??
+    e?.error?.code ??
+    e?.data?.code
+  );
+}
+
 export async function ensureZeroGNetwork(provider: BrowserProvider) {
   const selected = getZeroGNetwork(getSelectedNetworkKey());
   const network = await provider.getNetwork();
   if (Number(network.chainId) === selected.chainId) return;
-  try {
-    await provider.send("wallet_switchEthereumChain", [{ chainId: selected.chainIdHex }]);
-  } catch (error) {
-    const anyError = error as { code?: number; info?: { error?: { code?: number } } };
-    const code = anyError.code ?? anyError.info?.error?.code;
-    if (code === 4001) throw error;
-    if (code !== 4902) throw error;
-    await provider.send("wallet_addEthereumChain", [
+
+  const addChain = () =>
+    provider.send("wallet_addEthereumChain", [
       {
         chainId: selected.chainIdHex,
         chainName: selected.label,
@@ -102,6 +110,24 @@ export async function ensureZeroGNetwork(provider: BrowserProvider) {
         blockExplorerUrls: [selected.explorerUrl]
       }
     ]);
+
+  try {
+    await provider.send("wallet_switchEthereumChain", [{ chainId: selected.chainIdHex }]);
+  } catch (switchError) {
+    const code = extractWalletErrorCode(switchError);
+    if (code === 4001) throw switchError; // user explicitly rejected
+    if (code === 4902) {
+      // Chain not added to wallet yet — add it, then switch
+      await addChain();
+      return;
+    }
+    // Some wallets surface 4902 as -32603 with the real code nested in originalError
+    const msg = String((switchError as any)?.message ?? "").toLowerCase();
+    if (msg.includes("unrecognized chain") || msg.includes("try adding the chain")) {
+      await addChain();
+      return;
+    }
+    throw switchError;
   }
 }
 

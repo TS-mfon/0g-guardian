@@ -42,6 +42,7 @@ export function getUserMessage(error: unknown, fallback = "Something went wrong.
   if (text.includes("agent is not active") || text.includes("agent paused")) return "This agent is paused and cannot accept tasks right now.";
   if (text.includes("da is not configured") || text.includes("da submission")) return "0G DA is not configured yet. The task will stay pending.";
   if (text.includes("not configured yet") || text.includes("not deployed yet")) return "Launch contracts are not configured for this network. Check that you are on the right network.";
+  if (text.includes("unrecognized chain") || text.includes("try adding the chain")) return "This network isn't added to your wallet yet. The app will add it automatically — please approve the prompt.";
   if (text.includes("no injected wallet") || text.includes("install a wallet")) return "No wallet detected. Install MetaMask or a compatible EVM wallet.";
   if (text.includes("network changed") || text.includes("underlying network changed")) return "Network changed mid-transaction. Reconnect your wallet and retry.";
   if (parsedMessage) return parsedMessage;
