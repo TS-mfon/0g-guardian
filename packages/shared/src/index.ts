@@ -11,7 +11,7 @@ export const ZERO_G_MAINNET = {
 
 export const ZERO_G_GALILEO = {
   chainId: 16602,
-  chainIdHex: "0x40e2",
+  chainIdHex: "0x40da",
   rpcUrl: "https://evmrpc-testnet.0g.ai",
   storageIndexer: "https://indexer-storage-testnet-turbo.0g.ai",
   explorerUrl: "https://chainscan-galileo.0g.ai",

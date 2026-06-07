@@ -208,53 +208,26 @@ export function LaunchAgentForm() {
           <label>Agent name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
           <label>Symbol<input value={symbol} onChange={(event) => setSymbol(event.target.value.toUpperCase())} /></label>
         </div>
-        <div className="two-col">
+        <label>Identity mode<input value="Mint new Agent ID during launch" readOnly /></label>
+        <div className="model-select-row">
           <label>
             Category
             <select value={category} onChange={(event) => changeCategory(event.target.value as AgentCategory)}>
-              {agentCategories.map((item) => <option key={item}>{item}</option>)}
+              {agentCategories.map((item) => <option key={item} value={item}>{item.charAt(0).toUpperCase() + item.slice(1)}</option>)}
             </select>
           </label>
-          <label>Identity mode<input value="Mint new Agent ID during launch" readOnly /></label>
+          <label>
+            0G Compute model
+            <select value={selectedModelId} onChange={(event) => setSelectedModelId(event.target.value)}>
+              {computeModelsByCategory[category].map((model) => (
+                <option value={model.id} key={model.id}>
+                  {model.label} · {model.tier}{model.teeRequired ? " · TEE" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-        <label>
-          0G Compute model for this task type
-          <select value={selectedModelId} onChange={(event) => setSelectedModelId(event.target.value)}>
-            {computeModelsByCategory[category].map((model) => <option value={model.id} key={model.id} disabled={!availableModels.has(model.id)}>{model.label} · {availableModels.has(model.id) ? model.tier : "unavailable on selected network"}</option>)}
-          </select>
-        </label>
-        <div className="model-matrix-panel">
-          <div className="section-heading-row">
-            <div>
-              <span className="section-kicker">Model map</span>
-              <h3>Pick a task type to reveal compatible 0G models</h3>
-            </div>
-          </div>
-          <div className="model-matrix-grid">
-            {computeModelMatrix.map(({ category: itemCategory, model }) => (
-              <button
-                type="button"
-                className={itemCategory === category && model.id === selectedModel.id ? "model-option-card active" : "model-option-card"}
-                key={`${itemCategory}-${model.id}`}
-                onClick={() => {
-                  changeCategory(itemCategory);
-                  setSelectedModelId(model.id);
-                }}
-              >
-                <span>{itemCategory}</span>
-                <strong>{model.label}</strong>
-                <p>{model.reason}</p>
-                <em>{model.tier}{model.teeRequired ? " · TEE" : ""} · {model.modality}</em>
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="network-readiness-card compute-model-card">
-          <span className={selectedModel.teeRequired ? "status-badge success" : "status-badge pending"}>{selectedModel.modality}</span>
-          <strong>{selectedModel.label}</strong>
-          <p>{selectedModel.reason}</p>
-          <p>{availableModels.has(selectedModel.id) ? `Live provider availability confirmed on ${network.label}. Activation fee is read from the contract after launch.` : `No healthy ${network.label} provider currently advertises this model.`}</p>
-        </div>
+        <p className="model-hint">{selectedModel.reason}{selectedModel.teeRequired ? " Runs in a trusted execution environment." : ""}</p>
         <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
         <label>System prompt<textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} /></label>
         <button className="primary-button" disabled={!canLaunch || readiness === "blocked"}>{busy ? "Launching..." : "Launch verified agent"}</button>
