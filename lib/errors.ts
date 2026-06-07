@@ -33,7 +33,7 @@ export function getUserMessage(error: unknown, fallback = "Something went wrong.
 
   if (text.includes("insufficient funds")) return "Insufficient 0G balance for this transaction.";
   if (text.includes("wrong network") || text.includes("switch to")) return "Switch to the selected 0G network.";
-  if (text.includes("missing revert data") || text.includes("call_exception")) return "The 0G network request failed. Please retry.";
+  if (text.includes("missing revert data") || text.includes("call_exception")) return "The 0G RPC call failed. Check your wallet network and retry — the node may be temporarily overloaded.";
   if (text.includes("storage")) return "0G Storage upload failed. Please retry.";
   if (text.includes("creator has not linked") || text.includes("link compute")) return "This creator has not linked 0G Compute yet.";
   if (text.includes("compute is not configured")) return "0G Compute is not configured yet. The task will stay pending.";

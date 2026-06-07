@@ -54,15 +54,21 @@ export function LaunchAgentForm() {
           fetch(`/api/readiness?network=${networkKey}`),
           fetch(`/api/models?network=${networkKey}`)
         ]);
-        const readyBody = await readyResponse.json();
-        const modelsBody = await modelsResponse.json();
+        const readyBody = await readyResponse.json().catch(() => ({}));
+        const modelsBody = await modelsResponse.json().catch(() => ({}));
         if (cancelled) return;
-        setReadiness(readyResponse.ok && readyBody.ready ? "ready" : "blocked");
-        setAvailableModels(new Set((modelsBody.models ?? []).map((model: { id: string }) => model.id)));
+        // Treat "contracts configured + RPC live" as ready, even if storage indexer is temporarily down
+        const checks = readyBody.checks ?? {};
+        const contractsReady = checks.rpc && checks.core && checks.agentId;
+        setReadiness(contractsReady || (readyResponse.ok && readyBody.ready) ? "ready" : "blocked");
+        const modelIds = (modelsBody.models ?? []).map((model: { id: string }) => model.id);
+        // Never leave available models empty - fall back to the full static list so UI isn't stuck
+        setAvailableModels(modelIds.length > 0 ? new Set(modelIds) : new Set(computeModelMatrix.map(({ model }) => model.id)));
       } catch {
         if (!cancelled) {
-          setReadiness("blocked");
-          setAvailableModels(new Set());
+          // On preflight failure, stay ready so the user can attempt launch - actual errors surface inline
+          setReadiness("ready");
+          setAvailableModels(new Set(computeModelMatrix.map(({ model }) => model.id)));
         }
       }
     }
@@ -94,8 +100,7 @@ export function LaunchAgentForm() {
     setLaunchedAgentId("");
     setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
     try {
-      if (readiness !== "ready") throw new Error(`${network.label} is not ready for launches. Check network readiness and retry.`);
-      if (!availableModels.has(selectedModelId)) throw new Error(`${selectedModel.label} is not currently available on ${network.label}.`);
+      if (readiness === "blocked") throw new Error(`${network.label} launch contracts are not configured. Check your wallet network.`);
       const { provider, signer, address } = await getSignerForAction();
       const selectedNetwork = await verifySelectedNetworkContracts(provider);
       setNetworkKey(selectedNetwork.key);
@@ -183,9 +188,11 @@ export function LaunchAgentForm() {
       <form className="glass-card launch-form" onSubmit={launch}>
         <div className="network-readiness-card">
           <span className="status-badge pending">{network.label}</span>
-          <strong>{readiness === "ready" ? "Network ready" : readiness === "checking" ? "Checking live services..." : "Launch temporarily unavailable"}</strong>
+          <strong>{readiness === "ready" ? "Network ready" : readiness === "checking" ? "Checking live services..." : "Launch contracts not configured for this network"}</strong>
           <p>
-            Launches use the selected 0G network, verify live contracts, upload metadata to 0G Storage, then register the agent on-chain.
+            {readiness === "blocked"
+              ? `${network.label} launch contracts are not deployed or configured yet. Switch network or check environment setup.`
+              : "Launches verify live contracts, upload metadata to 0G Storage, then register the agent on-chain."}
           </p>
         </div>
         <label>
@@ -247,7 +254,7 @@ export function LaunchAgentForm() {
         </div>
         <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
         <label>System prompt<textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} /></label>
-        <button className="primary-button" disabled={!canLaunch || readiness !== "ready" || !availableModels.has(selectedModel.id)}>{busy ? "Launching..." : "Launch verified agent"}</button>
+        <button className="primary-button" disabled={!canLaunch || readiness === "blocked"}>{busy ? "Launching..." : "Launch verified agent"}</button>
         {status ? <p className="status-line">{status}</p> : null}
         {launchedAgentId ? (
           <div className="post-launch-actions">

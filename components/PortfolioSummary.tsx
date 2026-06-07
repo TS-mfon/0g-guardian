@@ -18,7 +18,12 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
   const [busy, setBusy] = useState("");
 
   async function refresh() {
-    const snapshot = await getWalletSnapshotSilently();
+    let snapshot;
+    try {
+      snapshot = await getWalletSnapshotSilently();
+    } catch {
+      return;
+    }
     setAddress(snapshot.address);
     if (!snapshot.address) return;
     try {
@@ -31,8 +36,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
       setClaimableByAgent(Object.fromEntries(earnings));
       setKeyPositions(Object.fromEntries(positions));
     } catch {
-      setClaimableByAgent({});
-      setKeyPositions({});
+      // On transient RPC error, keep previous state rather than clearing to prevent UI glitch
     }
   }
 
