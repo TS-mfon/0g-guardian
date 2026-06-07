@@ -100,8 +100,10 @@ export function LaunchAgentForm() {
     setLaunchedAgentId("");
     setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
     try {
-      if (readiness === "blocked") throw new Error(`${network.label} launch contracts are not configured. Check your wallet network.`);
+      if (readiness === "blocked") throw new Error(`${network.label} launch contracts are not configured. Switch to a network with deployed contracts.`);
+      setStatus("Connecting wallet...");
       const { provider, signer, address } = await getSignerForAction();
+      setStatus("Verifying contracts on chain...");
       const selectedNetwork = await verifySelectedNetworkContracts(provider);
       setNetworkKey(selectedNetwork.key);
       if (!isModelAllowedForCategory(category, selectedModelId)) {
@@ -177,7 +179,8 @@ export function LaunchAgentForm() {
     } catch (error) {
       setTxHash("");
       setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
-      setStatus(getUserMessage(error, "Launch failed. Please retry."));
+      const msg = getUserMessage(error, "");
+      setStatus(msg || (error instanceof Error ? error.message : "Launch failed. Please retry."));
     } finally {
       setBusy(false);
     }

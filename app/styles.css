@@ -89,6 +89,43 @@ main { padding: 20px; }
   color: var(--ink);
 }
 
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.nav-network-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.06) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a0a0b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 30px 8px 12px;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+  white-space: nowrap;
+}
+
+.nav-network-select:hover {
+  border-color: rgba(168, 85, 247, 0.5);
+  background-color: rgba(168, 85, 247, 0.08);
+}
+
+.nav-network-select:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.7);
+}
+
+.nav-network-select option {
+  background: #0d1117;
+  color: #f0f0f8;
+}
+
 .hero-section,
 .page-hero,
 .content-band,
@@ -994,8 +1031,16 @@ textarea {
     width: 100%;
   }
 
-  .wallet-pill {
+  .nav-controls {
     width: 100%;
+  }
+
+  .nav-network-select {
+    flex: 1;
+  }
+
+  .wallet-pill {
+    flex: 1;
     justify-content: space-between;
   }
 
