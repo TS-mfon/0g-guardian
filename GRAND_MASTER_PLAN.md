@@ -1,5 +1,7 @@
 # Agent.fun on 0G Grand Master Plan
 
+> Historical planning artifact. Galileo testnet steps below were superseded; the dApp now targets 0G Mainnet only.
+
 Planning-only artifact. No implementation code is included here.
 
 This plan is written for a repo that currently contains a Next.js App Router dApp, serverless API routes, a single Solidity `AgentFunCore` contract, a `MockAgentId` contract, 0G Storage upload helpers, compute and DA orchestration routes, Genesis agent templates, deployment scripts, and documentation. It is intentionally detailed enough to break into GitHub issues, milestones, acceptance tests, audit tickets, and deployment runbooks.

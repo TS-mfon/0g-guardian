@@ -9,15 +9,6 @@ export const ZERO_G_MAINNET = {
   storageScanUrl: "https://storagescan.0g.ai"
 } as const;
 
-export const ZERO_G_GALILEO = {
-  chainId: 16602,
-  chainIdHex: "0x40da",
-  rpcUrl: "https://evmrpc-testnet.0g.ai",
-  storageIndexer: "https://indexer-storage-testnet-turbo.0g.ai",
-  explorerUrl: "https://chainscan-galileo.0g.ai",
-  storageScanUrl: "https://storagescan-galileo.0g.ai"
-} as const;
-
 export const agentFunCoreAbi = [
   "function launchFee() view returns (uint256)",
   "function activationFee() view returns (uint256)",

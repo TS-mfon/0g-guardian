@@ -27,20 +27,12 @@ The app does not generate fake agents or fake proof values. Public agents come f
 - Agent ID deployment: `0x842770159aee8ed9e680df0121f8e87e4bb526ab3fba128cca5982ce3720c4b3`
 - Explorer: https://chainscan.0g.ai/address/0x637e7F5BF1dF450E0e4Cf7D80156C70210f3dB46
 
-### 0G Galileo
-
-- AgentFunCoreV2: `0x28696a881D57BC3Ed88AbE082a82934d8b82E893`
-- Agent ID: `0x2d46d1ED4eC91593889f106b0a3aF1BF38a4458d`
-- Core deployment: `0x5e692f092f4a8e22a2b4d928c5453f603070f5d27bf82d500204fb7a696a2e0f`
-- Agent ID deployment: `0x47de1ef72e329adf7a704de29972d059df238c9f4819a705761bcd1de2935316`
-- Explorer: https://chainscan-galileo.0g.ai/address/0x28696a881D57BC3Ed88AbE082a82934d8b82E893
-
 ## Product Flows
 
 ### Creator
 
-1. Connect a wallet and select mainnet or Galileo.
-2. Choose a task category and a model currently available on that network.
+1. Connect a wallet to 0G Mainnet.
+2. Choose a task category and a model currently available on 0G Router.
 3. Upload metadata and initial memory to 0G Storage.
 4. Mint Agent ID and launch the agent on 0G Chain.
 5. Activate compute with one contract transaction.
@@ -50,7 +42,7 @@ Creators never paste provider API keys or manually manage provider accounts.
 
 ### User
 
-1. Browse agents read from the selected network.
+1. Browse agents read from 0G Mainnet.
 2. Buy or sell an agent key through the bonding curve.
 3. Submit a task after the app receives a live 0G Compute price quote.
 4. Pay the service fee and maximum compute budget into task escrow.
@@ -64,7 +56,7 @@ Creator/User Wallet
        |
        | Agent ID mint, launch, activation, keys, task escrow, claims
        v
-AgentFunCoreV2 on selected 0G network
+AgentFunCoreV2 on 0G Mainnet
        |
        +--> per-agent creator revenue
        +--> protocol treasury revenue
@@ -73,12 +65,12 @@ AgentFunCoreV2 on selected 0G network
 
 Next.js application
        |
-       +--> live network readiness and provider discovery
-       +--> exact network-specific contract reads
+       +--> live network readiness and model discovery
+       +--> mainnet contract reads
        +--> task execution validation
        |
        +--> 0G Storage: metadata, memory, prompts, results
-       +--> 0G Compute: Router on mainnet, discovered providers on Galileo
+       +--> 0G Compute: 0G Router model catalog
 ```
 
 0G DA was removed from the runtime because Agent.fun does not operate a rollup and does not need DA to complete tasks safely.
@@ -99,21 +91,14 @@ Next.js application
 
 ## Live Model Strategy
 
-Mainnet model availability and token prices are read dynamically from `https://router-api.0g.ai/v1/models`.
-
-Galileo uses the 0G Compute read-only broker to discover acknowledged providers. At the latest verification, Galileo exposed:
-
-- `qwen/qwen2.5-omni-7b`
-- `qwen/qwen-image-edit-2511`
-
-Models without a healthy provider on the selected network are disabled in Launch.
+Model availability and token prices are read dynamically from `https://router-api.0g.ai/v1/models`. A static fallback keeps the launch flow available if the router is briefly unreachable.
 
 ## Runtime APIs
 
-- `GET /api/readiness?network=mainnet|testnet`: RPC, V2 contracts, Agent ID, and Storage readiness.
-- `GET /api/models?network=mainnet|testnet`: live network-specific models/providers.
+- `GET /api/readiness`: RPC, V2 contracts, Agent ID, and Storage readiness on 0G Mainnet.
+- `GET /api/models`: live mainnet models from the 0G Router with static fallback.
 - `POST /api/task-quote`: live user compute budget quote.
-- `POST /api/storage/upload-json?network=...`: uploads JSON to selected-network 0G Storage.
+- `POST /api/storage/upload-json`: uploads JSON to 0G Storage.
 - `POST /api/tasks/execute`: validates paid task, loads real agent metadata, runs compute, stores result/memory, and completes settlement.
 
 See [docs/api.md](docs/api.md) and [docs/0g-integration-tutorial.md](docs/0g-integration-tutorial.md).
@@ -173,13 +158,12 @@ Current verified status:
 - 27 Foundry tests pass: 19 legacy regression tests and 8 V2 security/economic tests.
 - TypeScript typecheck passes.
 - Production Next.js build passes.
-- Mainnet and Galileo V2 bytecode and counters were verified through live RPC reads.
+- Mainnet V2 bytecode and counters were verified through live RPC reads.
 - `npm audit` reports 19 low-severity transitive `elliptic` findings from the 0G Compute SDK dependency tree, with no available upstream fix.
 
 ## Reviewer Notes
 
-- Select the network before launching or performing actions.
-- Galileo only enables models with live acknowledged Galileo providers.
+- All actions target 0G Mainnet automatically.
 - Creator revenue controls are rendered only when the connected wallet owns the agent.
 - Blockchain data is inherently public, but Agent.fun does not expose creator revenue in normal-user UI.
 - Production paid inference requires funded platform compute credentials. The application never substitutes fake output when credentials are unavailable.

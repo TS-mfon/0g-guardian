@@ -12,10 +12,9 @@ for (const file of ["/home/sudodave/buildenv/.env", ".env.local", ".env"]) {
   }
 }
 
-const testnet = process.argv.includes("--testnet");
-const rpc = testnet ? "https://evmrpc-testnet.0g.ai" : (process.env.ZERO_G_RPC_URL ?? "https://rpc.ankr.com/0g_mainnet_evm");
-const chainId = testnet ? 16602 : 16661;
-const address = testnet ? process.env.TESTNET_V2_CORE : process.env.MAINNET_V2_CORE;
+const rpc = process.env.ZERO_G_RPC_URL ?? "https://rpc.ankr.com/0g_mainnet_evm";
+const chainId = 16661;
+const address = process.env.MAINNET_V2_CORE;
 const privateKey = process.env.DEPLOYER_PRIVATE_KEY ?? process.env.DEPLOYER_PRIVATEKEY ?? process.env.PRIVATE_KEY;
 if (!address || !privateKey) throw new Error("Set the V2 core address and deployment key.");
 const wallet = new ethers.Wallet(privateKey, new ethers.JsonRpcProvider(rpc, chainId));

@@ -14,10 +14,7 @@ for (const file of ["/home/sudodave/buildenv/.env", ".env.local", ".env"]) {
   }
 }
 
-const networkKey = process.argv.includes("--testnet") ? "testnet" : "mainnet";
-const network = networkKey === "testnet"
-  ? { chainId: 16602, rpc: process.env.TESTNET_ZERO_G_RPC_URL ?? "https://evmrpc-testnet.0g.ai", prefix: "TESTNET" }
-  : { chainId: 16661, rpc: process.env.ZERO_G_RPC_URL ?? "https://rpc.ankr.com/0g_mainnet_evm", prefix: "MAINNET" };
+const network = { chainId: 16661, rpc: process.env.ZERO_G_RPC_URL ?? "https://rpc.ankr.com/0g_mainnet_evm", prefix: "MAINNET" };
 const privateKey = process.env.DEPLOYER_PRIVATE_KEY ?? process.env.DEPLOYER_PRIVATEKEY ?? process.env.PRIVATE_KEY;
 const protocolTreasury = process.env.PROTOCOL_TREASURY ?? "0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E";
 const computeTreasury = process.env.COMPUTE_TREASURY ?? protocolTreasury;
@@ -59,7 +56,7 @@ async function main() {
     `${network.prefix}_AGENT_ID_DEPLOY_TX=${identity.txHash}`,
     `${network.prefix}_V2_DEPLOYMENT_BLOCK=${Math.min(core.blockNumber, identity.blockNumber)}`
   ].join("\n");
-  writeFileSync(`deployment-v2-${networkKey}.env`, `${output}\n`);
+  writeFileSync(`deployment-v2-mainnet.env`, `${output}\n`);
   console.log(output);
 }
 

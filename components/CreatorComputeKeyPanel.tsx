@@ -45,7 +45,7 @@ export function CreatorComputeKeyPanel({
 
   useEffect(() => {
     void refresh();
-  }, [refresh, wallet.network]);
+  }, [refresh]);
 
   async function activateCompute() {
     setActivationBusy(true);

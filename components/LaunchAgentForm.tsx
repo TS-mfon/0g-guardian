@@ -6,11 +6,11 @@ import { AgentCategory, agentFunCoreAbi, agenticIdAbi, agentMetadataSchema, agen
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { genesisTemplates } from "@/lib/agent-templates";
 import { agentCategories, computeModelMatrix, computeModelsByCategory, findComputeModel, getDefaultComputeModel, isModelAllowedForCategory } from "@/lib/compute-models";
-import { getZeroGNetwork, ZeroGNetworkKey } from "@/lib/config";
+import { getZeroGNetwork } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { hashJson, shortHash } from "@/lib/hash";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
-import { getSelectedNetworkKey, getSignerForAction, verifySelectedNetworkContracts } from "@/lib/wallet";
+import { getSignerForAction, verifySelectedNetworkContracts } from "@/lib/wallet";
 
 function bytes32(value: string) {
   return ethers.zeroPadValue(value as `0x${string}`, 32);
@@ -31,19 +31,11 @@ export function LaunchAgentForm() {
   const [verifiedProof, setVerifiedProof] = useState({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
   const [busy, setBusy] = useState(false);
   const [launchedAgentId, setLaunchedAgentId] = useState("");
-  const [networkKey, setNetworkKey] = useState<ZeroGNetworkKey>("mainnet");
   const [readiness, setReadiness] = useState<"checking" | "ready" | "blocked">("checking");
   const [availableModels, setAvailableModels] = useState<Set<string>>(new Set());
-  const network = getZeroGNetwork(networkKey);
+  const network = getZeroGNetwork();
   const selectedModel = findComputeModel(category, selectedModelId);
   const canLaunch = Boolean(name.trim() && symbol.trim() && description.trim() && systemPrompt.trim() && selectedModelId) && !busy;
-
-  useEffect(() => {
-    setNetworkKey(getSelectedNetworkKey());
-    const onNetwork = () => setNetworkKey(getSelectedNetworkKey());
-    window.addEventListener("agentfun:network", onNetwork);
-    return () => window.removeEventListener("agentfun:network", onNetwork);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,8 +43,8 @@ export function LaunchAgentForm() {
       setReadiness("checking");
       try {
         const [readyResponse, modelsResponse] = await Promise.all([
-          fetch(`/api/readiness?network=${networkKey}`),
-          fetch(`/api/models?network=${networkKey}`)
+          fetch(`/api/readiness`),
+          fetch(`/api/models`)
         ]);
         const readyBody = await readyResponse.json().catch(() => ({}));
         const modelsBody = await modelsResponse.json().catch(() => ({}));
@@ -74,7 +66,7 @@ export function LaunchAgentForm() {
     }
     void preflight();
     return () => { cancelled = true; };
-  }, [networkKey]);
+  }, []);
 
   function loadTemplate(value: string) {
     const next = genesisTemplates.find((item) => item.name === value) ?? genesisTemplates[0];
@@ -105,7 +97,6 @@ export function LaunchAgentForm() {
       const { provider, signer, address } = await getSignerForAction();
       setStatus("Verifying contracts on chain...");
       const selectedNetwork = await verifySelectedNetworkContracts(provider);
-      setNetworkKey(selectedNetwork.key);
       if (!isModelAllowedForCategory(category, selectedModelId)) {
         throw new Error("Choose a 0G Compute model that supports this agent task type.");
       }

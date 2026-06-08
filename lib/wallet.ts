@@ -1,6 +1,6 @@
 import { BrowserProvider, Contract, ethers } from "ethers";
 import { agentFunCoreAbi, agenticIdAbi } from "@shared/index";
-import { getZeroGNetwork, isAddressConfigured, ZeroGNetworkKey, zeroGNetworks } from "./config";
+import { getZeroGNetwork, isAddressConfigured, ZeroGNetworkKey } from "./config";
 
 declare global {
   interface Window {
@@ -32,7 +32,7 @@ export async function getWalletSnapshotSilently() {
   const accounts = await provider.send("eth_accounts", []);
   const address = Array.isArray(accounts) && accounts[0] ? String(accounts[0]) : "";
   const chainId = Number((await provider.getNetwork()).chainId);
-  const selected = getZeroGNetwork(getSelectedNetworkKey());
+  const selected = getZeroGNetwork();
   return { provider, address, chainId, selectedNetwork: selected, isCorrectNetwork: chainId === selected.chainId };
 }
 
@@ -70,16 +70,7 @@ export function wantsWalletReconnect() {
 }
 
 export function getSelectedNetworkKey(): ZeroGNetworkKey {
-  if (typeof window === "undefined") return "mainnet";
-  const value = window.localStorage.getItem("agentfun.network");
-  return value === "testnet" ? "testnet" : "mainnet";
-}
-
-export function setSelectedNetworkKey(key: ZeroGNetworkKey) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem("agentfun.network", key);
-  document.cookie = `agentfun.network=${key}; path=/; max-age=31536000; samesite=lax`;
-  window.dispatchEvent(new CustomEvent("agentfun:network", { detail: { key } }));
+  return "mainnet";
 }
 
 function extractWalletErrorCode(error: unknown): number | undefined {
@@ -96,7 +87,7 @@ function extractWalletErrorCode(error: unknown): number | undefined {
 }
 
 export async function ensureZeroGNetwork(provider: BrowserProvider) {
-  const selected = getZeroGNetwork(getSelectedNetworkKey());
+  const selected = getZeroGNetwork();
   const network = await provider.getNetwork();
   if (Number(network.chainId) === selected.chainId) return;
 
@@ -132,12 +123,11 @@ export async function ensureZeroGNetwork(provider: BrowserProvider) {
 }
 
 export function getSelectedNetworkLabel() {
-  return zeroGNetworks[getSelectedNetworkKey()].label;
+  return getZeroGNetwork().label;
 }
 
 export async function verifySelectedNetworkContracts(provider: BrowserProvider) {
-  const selectedKey = getSelectedNetworkKey();
-  const selected = getZeroGNetwork(selectedKey);
+  const selected = getZeroGNetwork();
   const network = await provider.getNetwork();
   if (Number(network.chainId) !== selected.chainId) {
     throw new Error(`Switch to ${selected.label} before launching.`);

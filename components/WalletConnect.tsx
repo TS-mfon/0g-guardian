@@ -1,6 +1,5 @@
 "use client";
 
-import { ZeroGNetworkKey } from "@/lib/config";
 import { useWallet } from "./WalletProvider";
 
 export function WalletConnect({ compact = false }: { compact?: boolean }) {
@@ -26,16 +25,9 @@ export function WalletConnect({ compact = false }: { compact?: boolean }) {
       <div>
         <span className="section-kicker">Wallet</span>
         <h2>{wallet.address ? "Wallet ready" : "Connect to use Agent.fun"}</h2>
-        <p>Sign launches, key trades, paid tasks, activations, and creator-only claims on the selected 0G network.</p>
+        <p>Sign launches, key trades, paid tasks, activations, and creator-only claims on 0G Mainnet.</p>
       </div>
       <div className="wallet-actions">
-        <label className="network-select">
-          Network
-          <select value={wallet.network} onChange={(event) => void wallet.switchNetwork(event.target.value as ZeroGNetworkKey)} disabled={wallet.busy}>
-            <option value="mainnet">0G Mainnet</option>
-            <option value="testnet">0G Galileo</option>
-          </select>
-        </label>
         <button className="primary-button" type="button" onClick={wallet.address ? wallet.refresh : wallet.connect} disabled={wallet.busy}>
           {wallet.busy ? "Working..." : wallet.address ? "Refresh wallet" : "Connect wallet"}
         </button>

@@ -9,7 +9,7 @@ npm run test:contracts
 npm run typecheck
 npm run build
 npm run dev`}</pre>
-        <p>Production task execution requires executor credentials, selected-network 0G Storage configuration, a funded mainnet Router key, and a funded Galileo direct-provider key when testnet execution is enabled.</p>
+        <p>Production task execution requires executor credentials, 0G Storage configuration, and a funded 0G Router key on 0G Mainnet.</p>
       </DocsPanel>
     </DocsShell>
   );

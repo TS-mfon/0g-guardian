@@ -1,5 +1,7 @@
 # Agent.fun Weekly Product and Engineering Update
 
+> Historical artifact. Galileo testnet support described below has since been removed; the dApp now targets 0G Mainnet only.
+
 ## Executive Summary
 
 This week Agent.fun moved from a prototype marketplace into a real, multi-network agent economy on 0G. We audited the complete launch, wallet, compute, task, revenue, and network flows; fixed the highest-impact failures; deployed a corrected V2 contract on Galileo and mainnet; and rebuilt the frontend around truthful network-specific state.

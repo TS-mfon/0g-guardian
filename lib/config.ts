@@ -1,4 +1,4 @@
-import { ZERO_G_GALILEO, ZERO_G_MAINNET } from "@shared/index";
+import { ZERO_G_MAINNET } from "@shared/index";
 
 export const zeroGNetworks = {
   mainnet: {
@@ -11,22 +11,11 @@ export const zeroGNetworks = {
     storageScanUrl: process.env.NEXT_PUBLIC_MAINNET_0G_STORAGE_SCAN ?? process.env.NEXT_PUBLIC_0G_STORAGE_SCAN ?? ZERO_G_MAINNET.storageScanUrl,
     agentFunCoreAddress: process.env.NEXT_PUBLIC_MAINNET_AGENT_FUN_CORE_ADDRESS ?? process.env.NEXT_PUBLIC_AGENT_FUN_CORE_ADDRESS ?? "",
     agentIdContractAddress: process.env.NEXT_PUBLIC_MAINNET_AGENT_ID_CONTRACT_ADDRESS ?? process.env.NEXT_PUBLIC_AGENT_ID_CONTRACT_ADDRESS ?? ""
-  },
-  testnet: {
-    key: "testnet",
-    label: "0G Galileo",
-    ...ZERO_G_GALILEO,
-    rpcUrl: process.env.NEXT_PUBLIC_TESTNET_0G_RPC_URL ?? ZERO_G_GALILEO.rpcUrl,
-    storageIndexer: process.env.NEXT_PUBLIC_TESTNET_0G_STORAGE_INDEXER ?? ZERO_G_GALILEO.storageIndexer,
-    explorerUrl: process.env.NEXT_PUBLIC_TESTNET_0G_EXPLORER ?? ZERO_G_GALILEO.explorerUrl,
-    storageScanUrl: process.env.NEXT_PUBLIC_TESTNET_0G_STORAGE_SCAN ?? ZERO_G_GALILEO.storageScanUrl,
-    agentFunCoreAddress: process.env.NEXT_PUBLIC_TESTNET_AGENT_FUN_CORE_ADDRESS ?? "",
-    agentIdContractAddress: process.env.NEXT_PUBLIC_TESTNET_AGENT_ID_CONTRACT_ADDRESS ?? ""
   }
 } as const;
 
-export type ZeroGNetworkKey = keyof typeof zeroGNetworks;
-export type ZeroGRuntimeNetwork = typeof zeroGNetworks[ZeroGNetworkKey];
+export type ZeroGNetworkKey = "mainnet";
+export type ZeroGRuntimeNetwork = typeof zeroGNetworks["mainnet"];
 
 export const clientConfig = {
   chainId: zeroGNetworks.mainnet.chainId,
@@ -46,10 +35,6 @@ export function isAddressConfigured(address: string) {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
-export function getZeroGNetwork(key: ZeroGNetworkKey) {
-  return zeroGNetworks[key];
-}
-
-export function getNetworkByChainId(chainId: number): ZeroGNetworkKey {
-  return chainId === zeroGNetworks.testnet.chainId ? "testnet" : "mainnet";
+export function getZeroGNetwork(_key: ZeroGNetworkKey = "mainnet") {
+  return zeroGNetworks.mainnet;
 }

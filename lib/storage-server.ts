@@ -1,5 +1,5 @@
 import { Wallet, JsonRpcProvider } from "ethers";
-import { getZeroGNetwork, ZeroGNetworkKey } from "./config";
+import { getZeroGNetwork } from "./config";
 
 export interface ServerStorageResult {
   rootHash: string;
@@ -8,8 +8,8 @@ export interface ServerStorageResult {
   mode: "0g-storage";
 }
 
-export async function uploadBytesTo0GFromServer(encoded: Uint8Array, networkKey: ZeroGNetworkKey = "mainnet"): Promise<ServerStorageResult> {
-  const network = getZeroGNetwork(networkKey);
+export async function uploadBytesTo0GFromServer(encoded: Uint8Array): Promise<ServerStorageResult> {
+  const network = getZeroGNetwork();
   const privateKey = (process.env.SERVER_WALLET_PRIVATE_KEY ?? process.env.DEPLOYER_PRIVATE_KEY ?? process.env.PRIVATE_KEY ?? "").trim();
   if (!privateKey) throw new Error("SERVER_WALLET_PRIVATE_KEY is not configured.");
   const sdk = (await import("@0gfoundation/0g-storage-ts-sdk")) as any;
@@ -25,8 +25,8 @@ export async function uploadBytesTo0GFromServer(encoded: Uint8Array, networkKey:
   return { rootHash: String(rootHash), txHash: tx?.txHash ? String(tx.txHash) : undefined, sizeBytes: encoded.byteLength, mode: "0g-storage" };
 }
 
-export async function downloadJsonFrom0G<T>(rootHash: string, networkKey: ZeroGNetworkKey = "mainnet"): Promise<T> {
-  const network = getZeroGNetwork(networkKey);
+export async function downloadJsonFrom0G<T>(rootHash: string): Promise<T> {
+  const network = getZeroGNetwork();
   const sdk = (await import("@0gfoundation/0g-storage-ts-sdk")) as any;
   const indexer = new sdk.Indexer(network.storageIndexer);
   const [blob, error] = await indexer.downloadToBlob(rootHash, { proof: true });

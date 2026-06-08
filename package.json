@@ -13,8 +13,6 @@
     "deploy:contract": "forge create contracts/src/AgentFunCore.sol:AgentFunCore --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY --broadcast",
     "deploy:mainnet": "forge build --root contracts && tsx scripts/deploy-mainnet.ts",
     "deploy:v2:mainnet": "forge build --root contracts && tsx scripts/deploy-v2.ts",
-    "deploy:v2:testnet": "forge build --root contracts && tsx scripts/deploy-v2.ts --testnet",
-    "approve:models:testnet": "TESTNET_V2_CORE=0x28696a881D57BC3Ed88AbE082a82934d8b82E893 tsx scripts/approve-models.ts --testnet",
     "sync:vercel:v2": "tsx scripts/sync-vercel-v2.ts",
     "seed:mainnet": "tsx scripts/seed-mainnet-agents.ts",
     "da:submit": "tsx scripts/da-submit.ts",

@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { ZeroGNetworkKey } from "@/lib/config";
 import { getLiveComputePrice, quoteComputeBudget } from "@/lib/compute-pricing";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const networkKey: ZeroGNetworkKey = body.network === "testnet" ? "testnet" : "mainnet";
     const modelId = String(body.model ?? "");
     if (!modelId) return NextResponse.json({ error: { code: "MODEL_REQUIRED", message: "Model is required." } }, { status: 400 });
 
-    const price = await getLiveComputePrice(networkKey, modelId);
+    const price = await getLiveComputePrice(modelId);
     const computeBudget = quoteComputeBudget(price);
     return NextResponse.json({
-      network: networkKey,
+      network: "mainnet",
       model: modelId,
       provider: price.provider,
       computeBudget: computeBudget.toString(),
