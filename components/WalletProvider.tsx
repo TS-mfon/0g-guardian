@@ -34,9 +34,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setAddress(snapshot.address);
       setBalance(snapshot.balance ? Number(snapshot.balance).toLocaleString(undefined, { maximumFractionDigits: 4 }) : "");
       setStatus(snapshot.address && !snapshot.isCorrectNetwork ? `Switch to ${snapshot.selectedNetwork.label}.` : "");
-    } catch {
-      setAddress("");
-      setBalance("");
+    } catch (error) {
+      // Preserve the last confirmed account during transient RPC failures. Account
+      // removal is handled explicitly by the accountsChanged event below.
+      setStatus(getUserMessage(error, "Wallet RPC is temporarily unavailable. Keeping the last connected account."));
     }
   }, []);
 

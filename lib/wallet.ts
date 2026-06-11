@@ -40,7 +40,6 @@ export async function getConnectedWallet() {
   const snapshot = await getWalletSnapshotSilently();
   if (!snapshot.address) return { ...snapshot, balance: "" };
   const rawBalance = await snapshot.provider.getBalance(snapshot.address);
-  rememberWallet(snapshot.address);
   return { ...snapshot, balance: ethers.formatEther(rawBalance) };
 }
 

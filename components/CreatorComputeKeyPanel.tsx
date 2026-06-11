@@ -48,20 +48,28 @@ export function CreatorComputeKeyPanel({
   }, [refresh]);
 
   async function activateCompute() {
+    let submittedHash = "";
     setActivationBusy(true);
-    setActivationStatus("Preparing activation transaction...");
+    setActivationStatus("Opening your wallet for compute activation...");
     try {
+      if (!activationFee) throw new Error("Activation fee is not loaded yet. Refresh creator controls and retry.");
       const contract = await agentFunCoreContract(getSelectedNetworkKey());
-      const fee = await contract.activationFee();
-      setActivationStatus(`Sign the ${ethers.formatEther(fee)} 0G activation transaction.`);
-      const tx = await contract.activateAgent(BigInt(agentId), { value: fee });
-      setActivationStatus("Activation submitted. Waiting for confirmation...");
+      const fee = ethers.parseEther(activationFee);
+      setActivationStatus(`Approve the ${activationFee} 0G activation transaction in your wallet.`);
+      // Bypass the wallet provider's flaky pre-sign gas estimation. The contract
+      // action is bounded and creator ownership is already confirmed in the UI.
+      const tx = await contract.activateAgent(BigInt(agentId), { value: fee, gasLimit: 250_000n });
+      submittedHash = tx.hash;
+      setActivationStatus(`Activation submitted. Waiting for confirmation. Tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}.`);
       await tx.wait();
       setActive(true);
       await refresh();
       setActivationStatus(`Task execution activated. Transaction ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}.`);
     } catch (error) {
-      setActivationStatus(getUserMessage(error, "Compute activation failed."));
+      const message = getUserMessage(error, "Compute activation could not be prepared.");
+      setActivationStatus(submittedHash
+        ? `${message} The transaction was submitted; check its receipt before retrying.`
+        : `${message} No activation transaction was submitted.`);
     } finally {
       setActivationBusy(false);
     }
