@@ -1222,6 +1222,33 @@ pre {
   margin: 20px auto 54px;
 }
 
+.portfolio-refresh-bar {
+  width: min(1180px, calc(100% - 32px));
+  margin: 14px auto 28px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.portfolio-refresh-bar div {
+  display: grid;
+  gap: 4px;
+}
+
+.portfolio-refresh-bar span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.economy-grid strong {
+  overflow-wrap: anywhere;
+}
+
 .wallet-card {
   background: linear-gradient(135deg, #ffffff, #f7f1ff);
 }

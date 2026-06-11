@@ -38,7 +38,7 @@ export const computeModelsByCategory: Record<AgentCategory, ComputeModelOption[]
     { id: "qwen/qwen3-vl-30b-a3b-instruct", label: "Qwen3 VL 30B", tier: "default", modality: "vision", reason: "Vision-language analysis for multimodal agents." }
   ],
   image: [
-    { id: "z-image", label: "Z-Image", tier: "default", modality: "image", reason: "Image generation and creative production tasks." }
+    { id: "z-image-turbo", label: "Z-Image Turbo", tier: "default", modality: "image", reason: "Live Router image generation for creative production tasks." }
   ],
   audio: [
     { id: "openai/whisper-large-v3", label: "Whisper Large V3", tier: "default", modality: "audio", reason: "Audio transcription and speech processing tasks." }

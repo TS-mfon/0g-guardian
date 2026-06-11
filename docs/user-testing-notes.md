@@ -38,4 +38,4 @@
 
 - 0G Storage and 0G RPC availability can affect transaction speed.
 - Users need enough 0G for gas and launch fee.
-- 0G Compute uses configured credentials when available; otherwise the app returns category-aware fallback task output for demo continuity.
+- Production task execution requires funded server-only 0G Router credentials. When credentials or providers are unavailable, the app reports the failure and preserves the paid task for retry or refund; it never substitutes fake output.

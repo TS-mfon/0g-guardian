@@ -144,3 +144,56 @@ export function getAgentMarketStats(agents: AgentView[]) {
     totalMarketCap: agents.reduce((sum, agent) => sum + Number(agent.marketCap), 0)
   };
 }
+
+export interface EconomyView {
+  agentsLaunched: number;
+  activatedAgents: number;
+  completedTasks: number;
+  uniquePayingUsers: number;
+  creatorPayouts: number;
+  protocolClaimable: number;
+  computeClaimable: number;
+  recordedComputeSpend: number;
+  averageRevenuePerActiveAgent: number;
+  taskSuccessRate: number;
+  treasuryRunwayTasks: number;
+}
+
+export async function loadEconomyFromChain(
+  agents: AgentView[],
+  tasks: TaskView[],
+  networkKey: ZeroGNetworkKey = "mainnet"
+): Promise<EconomyView> {
+  const completed = tasks.filter((task) => task.status === 3);
+  const refunded = tasks.filter((task) => task.status === 4);
+  const settled = completed.length + refunded.length;
+  const activatedAgents = agents.filter((agent) => agent.computeActive).length;
+  const creatorPayouts = agents.reduce((sum, agent) => sum + Number(agent.totalRevenue), 0);
+  const recordedComputeSpend = completed.reduce((sum, task) => sum + Number(task.actualComputeCost), 0);
+  let protocolClaimable = 0;
+  let computeClaimable = 0;
+  const contract = readAgentFunContract(networkKey);
+  if (contract) {
+    try {
+      const [protocol, compute] = await Promise.all([contract.protocolClaimable(), contract.computeClaimable()]);
+      protocolClaimable = Number(ethers.formatEther(protocol));
+      computeClaimable = Number(ethers.formatEther(compute));
+    } catch (error) {
+      console.warn("Unable to load Agent.fun treasury balances from 0G Chain", error);
+    }
+  }
+  const averageComputeCost = completed.length ? recordedComputeSpend / completed.length : 0;
+  return {
+    agentsLaunched: agents.length,
+    activatedAgents,
+    completedTasks: completed.length,
+    uniquePayingUsers: new Set(completed.map((task) => task.requester.toLowerCase())).size,
+    creatorPayouts,
+    protocolClaimable,
+    computeClaimable,
+    recordedComputeSpend,
+    averageRevenuePerActiveAgent: activatedAgents ? creatorPayouts / activatedAgents : 0,
+    taskSuccessRate: settled ? (completed.length / settled) * 100 : 0,
+    treasuryRunwayTasks: averageComputeCost ? computeClaimable / averageComputeCost : 0
+  };
+}

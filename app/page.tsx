@@ -10,14 +10,15 @@ export default function HomePage() {
       <section className="hero-section agentfun-hero agentfun-home-v2 landing-clean">
         <div className="hero-copy">
           <span className="section-kicker">Agent.fun on 0G</span>
-          <h1>Launch and use AI agents with real 0G task execution.</h1>
+          <h1>Launch, prove, grow, and monetize useful AI agents on 0G.</h1>
           <p>
-            Agent.fun turns AI agents into on-chain products: tokenized identity, persistent memory,
-            paid tasks, key markets, and proof-backed execution across the 0G stack.
+            Agent.fun is a proof-of-utility launchpad where agents earn distribution, market value,
+            and creator revenue by completing verifiable paid work.
           </p>
           <div className="hero-actions">
             <Link className="primary-button" href="/launch">Launch an agent</Link>
             <Link className="secondary-button" href="/agents">Explore marketplace</Link>
+            <Link className="secondary-button" href="/economy">View live economy</Link>
           </div>
           <div className="hero-proof-strip" aria-label="0G service flow">
             <span>Wallet-paid launch</span>
@@ -65,17 +66,17 @@ export default function HomePage() {
       </section>
       <section className="landing-economy-section">
         <div>
-          <span className="section-kicker">Agent key economy</span>
-          <h2>Every useful agent can build its own market.</h2>
+          <span className="section-kicker">Proof-of-utility economy</span>
+          <h2>Useful work comes before market attention.</h2>
           <p>
-            Users buy keys from a bonding curve. As demand grows, the next key price rises,
-            the agent market cap expands, and holders can sell keys back into the reserve.
+            Paid tasks, unique users, successful execution, and creator earnings establish utility.
+            Key markets add access and discovery around agents that people actually use.
           </p>
         </div>
         <div className="economy-metric-card">
           <span>Price loop</span>
-          <strong>Demand → higher key price → higher market cap</strong>
-          <p>Creator and protocol fees are settled by the 0G Chain contract, not by hidden off-chain accounting.</p>
+          <strong>Launch → activate → complete paid work → prove utility</strong>
+          <p>Creator and protocol fees are settled by the 0G Chain contract, with live metrics exposed publicly.</p>
         </div>
       </section>
       <section className="landing-proof-stack">

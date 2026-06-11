@@ -2,58 +2,57 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import { AgentAvatar } from "@/components/AgentAvatar";
+import { useWallet } from "@/components/WalletProvider";
 import { AgentView, TaskView } from "@/lib/agentfun";
 import { getUserMessage } from "@/lib/errors";
-import { agentFunCoreContract, agentFunCoreReadContract, getWalletSnapshotSilently } from "@/lib/wallet";
+import { agentFunCoreContract, agentFunCoreReadContract } from "@/lib/wallet";
 
 const pendingStatuses = new Set([1, 2]);
 
 export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgents: AgentView[]; initialTasks: TaskView[] }) {
-  const [address, setAddress] = useState("");
+  const router = useRouter();
+  const { address, refresh: refreshWallet } = useWallet();
   const [claimableByAgent, setClaimableByAgent] = useState<Record<string, string>>({});
   const [keyPositions, setKeyPositions] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState("");
+  const [portfolioError, setPortfolioError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
 
-  async function refresh() {
-    let snapshot;
-    try {
-      snapshot = await getWalletSnapshotSilently();
-    } catch {
+  async function refreshPortfolio(refreshPage = false) {
+    if (!address) {
+      setClaimableByAgent({});
+      setKeyPositions({});
+      setPortfolioError("");
       return;
     }
-    setAddress(snapshot.address);
-    if (!snapshot.address) return;
+    setBusy((current) => current || "refresh");
     try {
       const contract = await agentFunCoreReadContract();
-      const created = initialAgents.filter((agent) => agent.creator.toLowerCase() === snapshot.address.toLowerCase());
+      const created = initialAgents.filter((agent) => agent.creator.toLowerCase() === address.toLowerCase());
       const [earnings, positions] = await Promise.all([
         Promise.all(created.map(async (agent) => [agent.id, ethers.formatEther(await contract.agentCreatorClaimable(BigInt(agent.id)))] as const)),
-        Promise.all(initialAgents.map(async (agent) => [agent.id, (await contract.keyBalance(BigInt(agent.id), snapshot.address)).toString()] as const))
+        Promise.all(initialAgents.map(async (agent) => [agent.id, (await contract.keyBalance(BigInt(agent.id), address)).toString()] as const))
       ]);
       setClaimableByAgent(Object.fromEntries(earnings));
       setKeyPositions(Object.fromEntries(positions));
-    } catch {
-      // On transient RPC error, keep previous state rather than clearing to prevent UI glitch
+      setPortfolioError("");
+      setLastUpdated(new Date().toLocaleTimeString());
+      await refreshWallet();
+      if (refreshPage) router.refresh();
+    } catch (error) {
+      setPortfolioError(getUserMessage(error, "Could not refresh portfolio from 0G Chain. Showing the last successful snapshot."));
+    } finally {
+      setBusy((current) => current === "refresh" ? "" : current);
     }
   }
 
   useEffect(() => {
-    void refresh();
-    const onWallet = () => void refresh();
-    const ethereum = window.ethereum as (typeof window.ethereum & {
-      on?: (event: string, handler: (...args: any[]) => void) => void;
-      removeListener?: (event: string, handler: (...args: any[]) => void) => void;
-    });
-    window.addEventListener("agentfun:wallet", onWallet);
-    ethereum?.on?.("accountsChanged", onWallet);
-    return () => {
-      window.removeEventListener("agentfun:wallet", onWallet);
-      ethereum?.removeListener?.("accountsChanged", onWallet);
-    };
-  }, []);
+    void refreshPortfolio();
+  }, [address, initialAgents]);
 
   async function setActive(agentId: string, active: boolean) {
     setBusy(`active-${agentId}`);
@@ -62,6 +61,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
       const contract = await agentFunCoreContract();
       const tx = await contract.setAgentActive(BigInt(agentId), active);
       await tx.wait();
+      await refreshPortfolio(true);
       setStatus(active ? "Agent activated. Refreshing on-chain state may take a moment." : "Agent paused. Refreshing on-chain state may take a moment.");
     } catch (error) {
       setStatus(getUserMessage(error, "Could not update agent status."));
@@ -79,7 +79,7 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
       if (value === 0n) throw new Error("No claimable creator earnings yet.");
       const tx = await contract.claimAgentRevenue(BigInt(agentId));
       await tx.wait();
-      await refresh();
+      await refreshPortfolio(true);
       setStatus(`Creator earnings claimed. Tx ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}.`);
     } catch (error) {
       setStatus(getUserMessage(error, "Creator earnings claim failed."));
@@ -102,6 +102,15 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
         <div><span>Agents launched</span><strong>{address ? createdAgents.length : "Connect wallet"}</strong><p>Filtered from confirmed AgentLaunched records.</p></div>
         <div><span>Keys held</span><strong>{address ? heldAgents.length : "Connect"}</strong><p>Your key positions are read from `keyBalance`.</p></div>
         {createdAgents.length ? <div><span>Private creator earnings</span><strong>{totalCreatorEarnings.toLocaleString(undefined, { maximumFractionDigits: 5 })} 0G</strong><p>Visible only because this wallet created agents.</p></div> : null}
+      </section>
+      <section className="portfolio-refresh-bar">
+        <div>
+          <strong>{lastUpdated ? `Last updated ${lastUpdated}` : "Waiting for first wallet snapshot"}</strong>
+          <span>{portfolioError || "Wallet positions and creator balances are read directly from 0G Chain."}</span>
+        </div>
+        <button className="secondary-button" disabled={!!busy || !address} onClick={() => refreshPortfolio(true)}>
+          {busy === "refresh" ? "Refreshing..." : "Refresh portfolio"}
+        </button>
       </section>
 
       {createdAgents.length ? <section className="creator-console-grid">

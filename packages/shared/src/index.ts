@@ -18,6 +18,8 @@ export const agentFunCoreAbi = [
   "function computeTreasury() view returns (address)",
   "function protocolFeeBps() view returns (uint256)",
   "function BPS() view returns (uint256)",
+  "function protocolClaimable() view returns (uint256)",
+  "function computeClaimable() view returns (uint256)",
   "function launchesPaused() view returns (bool)",
   "function tasksPaused() view returns (bool)",
   "function marketPaused() view returns (bool)",

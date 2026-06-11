@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 import { AgentCategory, agentFunCoreAbi, agenticIdAbi, agentMetadataSchema, agentMemorySchema } from "@shared/index";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { genesisTemplates } from "@/lib/agent-templates";
-import { agentCategories, computeModelMatrix, computeModelsByCategory, findComputeModel, getDefaultComputeModel, isModelAllowedForCategory } from "@/lib/compute-models";
+import { agentCategories, computeModelsByCategory, findComputeModel, getDefaultComputeModel, isModelAllowedForCategory } from "@/lib/compute-models";
 import { getZeroGNetwork } from "@/lib/config";
 import { getUserMessage } from "@/lib/errors";
 import { hashJson, shortHash } from "@/lib/hash";
@@ -33,9 +33,12 @@ export function LaunchAgentForm() {
   const [launchedAgentId, setLaunchedAgentId] = useState("");
   const [readiness, setReadiness] = useState<"checking" | "ready" | "blocked">("checking");
   const [availableModels, setAvailableModels] = useState<Set<string>>(new Set());
+  const [modelCatalogStatus, setModelCatalogStatus] = useState("Checking live 0G Router providers...");
   const network = getZeroGNetwork();
   const selectedModel = findComputeModel(category, selectedModelId);
-  const canLaunch = Boolean(name.trim() && symbol.trim() && description.trim() && systemPrompt.trim() && selectedModelId) && !busy;
+  const selectedModelAvailable = availableModels.has(selectedModelId);
+  const canLaunch = Boolean(name.trim() && symbol.trim() && description.trim() && systemPrompt.trim() && selectedModelId)
+    && selectedModelAvailable && readiness === "ready" && !busy;
 
   useEffect(() => {
     let cancelled = false;
@@ -53,14 +56,16 @@ export function LaunchAgentForm() {
         const checks = readyBody.checks ?? {};
         const contractsReady = checks.rpc && checks.core && checks.agentId;
         setReadiness(contractsReady || (readyResponse.ok && readyBody.ready) ? "ready" : "blocked");
-        const modelIds = (modelsBody.models ?? []).map((model: { id: string }) => model.id);
-        // Never leave available models empty - fall back to the full static list so UI isn't stuck
-        setAvailableModels(modelIds.length > 0 ? new Set(modelIds) : new Set(computeModelMatrix.map(({ model }) => model.id)));
+        const modelIds = modelsBody.launchEnabled ? (modelsBody.models ?? []).map((model: { id: string }) => model.id) : [];
+        setAvailableModels(new Set(modelIds));
+        setModelCatalogStatus(modelIds.length
+          ? `${modelIds.length} approved models verified from ${modelsBody.source}.`
+          : "Launch disabled: no recent verified Router catalog is available.");
       } catch {
         if (!cancelled) {
-          // On preflight failure, stay ready so the user can attempt launch - actual errors surface inline
-          setReadiness("ready");
-          setAvailableModels(new Set(computeModelMatrix.map(({ model }) => model.id)));
+          setReadiness("blocked");
+          setAvailableModels(new Set());
+          setModelCatalogStatus("Launch disabled: model provider availability could not be verified.");
         }
       }
     }
@@ -93,6 +98,7 @@ export function LaunchAgentForm() {
     setVerifiedProof({ agentId: "", metadataRoot: "", memoryRoot: "", capabilityHash: "", txHash: "" });
     try {
       if (readiness === "blocked") throw new Error(`${network.label} launch contracts are not configured. Switch to a network with deployed contracts.`);
+      if (!availableModels.has(selectedModelId)) throw new Error("This model does not currently have a verified live 0G Router provider.");
       setStatus("Connecting wallet...");
       const { provider, signer, address } = await getSignerForAction();
       setStatus("Verifying contracts on chain...");
@@ -211,17 +217,17 @@ export function LaunchAgentForm() {
             0G Compute model
             <select value={selectedModelId} onChange={(event) => setSelectedModelId(event.target.value)}>
               {computeModelsByCategory[category].map((model) => (
-                <option value={model.id} key={model.id}>
-                  {model.label} · {model.tier}{model.teeRequired ? " · TEE" : ""}
+                <option value={model.id} key={model.id} disabled={!availableModels.has(model.id)}>
+                  {model.label} · {model.tier}{model.teeRequired ? " · TEE" : ""}{availableModels.has(model.id) ? "" : " · unavailable"}
                 </option>
               ))}
             </select>
           </label>
         </div>
-        <p className="model-hint">{selectedModel.reason}{selectedModel.teeRequired ? " Runs in a trusted execution environment." : ""}</p>
+        <p className="model-hint">{selectedModel.reason}{selectedModel.teeRequired ? " Runs in a trusted execution environment." : ""} {modelCatalogStatus}</p>
         <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} /></label>
         <label>System prompt<textarea value={systemPrompt} onChange={(event) => setSystemPrompt(event.target.value)} /></label>
-        <button className="primary-button" disabled={!canLaunch || readiness === "blocked"}>{busy ? "Launching..." : "Launch verified agent"}</button>
+        <button className="primary-button" disabled={!canLaunch}>{busy ? "Launching..." : selectedModelAvailable ? "Launch verified agent" : "Model unavailable"}</button>
         {status ? <p className="status-line">{status}</p> : null}
         {launchedAgentId ? (
           <div className="post-launch-actions">

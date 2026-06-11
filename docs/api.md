@@ -8,7 +8,7 @@ Checks 0G Mainnet RPC, AgentFunCoreV2 bytecode, Agent ID bytecode, and 0G Storag
 
 ## `GET /api/models`
 
-Returns live models available on 0G Router. Falls back to the static supported-model list if the router is temporarily unavailable.
+Returns application-approved models that report at least one live provider on 0G Router. A recent in-memory last-known-good catalog may be returned during a short Router interruption. When no recent verified catalog exists, the route returns `503`, an empty model list, and `launchEnabled: false`.
 
 - Source: 0G Router `/v1/models`
 
