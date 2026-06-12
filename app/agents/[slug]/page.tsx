@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { AgentActions } from "@/components/AgentActions";
 import { AgentAvatar } from "@/components/AgentAvatar";
 import { AgentTaskPanel } from "@/components/AgentTaskPanel";
-import { CreatorComputeKeyPanel } from "@/components/CreatorComputeKeyPanel";
 import { SiteNav } from "@/components/SiteNav";
 import { loadAgentsFromChain } from "@/lib/agentfun";
 import { getZeroGNetwork } from "@/lib/config";
@@ -38,14 +37,13 @@ export default async function AgentPage({ params }: { params: Promise<{ slug: st
             <div><span>Reserve</span><strong>{agent.reserve} 0G</strong></div>
             <div><span>Key price</span><strong>{agent.currentKeyPrice} 0G</strong></div>
             <div><span>Market cap</span><strong>{agent.marketCap} 0G</strong></div>
-            <div><span>Tasks</span><strong>{agent.taskCount}</strong></div>
+            <div><span>Tasks created</span><strong>{agent.taskCount}</strong></div>
             <div><span>Readiness</span><strong>{agent.readinessScore}%</strong></div>
           </div>
           <AgentActions agent={agent} />
         </div>
         <AgentTaskPanel agent={agent} />
       </section>
-      <CreatorComputeKeyPanel agentId={agent.id} creator={agent.creator} category={agent.category} computeActive={agent.computeActive} />
       <section className="proof-grid proof-grid-clean">
         <a href={`${network.explorerUrl}/address/${network.agentFunCoreAddress}`} target="_blank" rel="noreferrer">
           <span>On-chain agent</span><strong>Agent #{agent.id}</strong><p>Registered on 0G Chain under Agent ID #{agent.agentIdTokenId}.</p>

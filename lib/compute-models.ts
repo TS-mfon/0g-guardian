@@ -65,3 +65,7 @@ export function findComputeModel(category: AgentCategory, modelId: string) {
 export function isModelAllowedForCategory(category: AgentCategory, modelId: string) {
   return computeModelsByCategory[category].some((model) => model.id === modelId);
 }
+
+export function hasExecutionAdapter(model: ComputeModelOption) {
+  return model.modality === "chat";
+}

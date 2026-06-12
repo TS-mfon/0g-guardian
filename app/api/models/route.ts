@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { computeModelMatrix } from "@/lib/compute-models";
+import { computeModelMatrix, hasExecutionAdapter } from "@/lib/compute-models";
 
-const allowedIds = new Set(computeModelMatrix.map(({ model }) => model.id));
+const allowedIds = new Set(computeModelMatrix.filter(({ model }) => hasExecutionAdapter(model)).map(({ model }) => model.id));
 const MAX_CATALOG_AGE_MS = 15 * 60 * 1000;
 let lastKnownGood: { verifiedAt: string; models: RouterModel[] } | null = null;
 

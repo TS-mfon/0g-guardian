@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 
 function parseEnv(path: string) {
   const output: Record<string, string> = {};
@@ -21,6 +22,8 @@ const env: Record<string, string> = {
   SERVER_WALLET_PRIVATE_KEY: credentials.DEPLOYER_PRIVATEKEY,
   EXECUTOR_PRIVATE_KEY: credentials.DEPLOYER_PRIVATEKEY,
   OG_COMPUTE_BASE_URL: "https://router-api.0g.ai/v1",
+  OG_COMPUTE_KEY: credentials.OG_COMPUTE_KEY,
+  INTERNAL_API_KEY: credentials.INTERNAL_API_KEY || randomBytes(32).toString("hex"),
   OG_DEMO_MODE: "false"
 };
 

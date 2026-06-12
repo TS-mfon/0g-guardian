@@ -5,6 +5,7 @@ import { apiError, readSchema } from "@/lib/api";
 import { runAgentTask } from "@/lib/compute-client";
 import { clientConfig } from "@/lib/config";
 import { hashJson } from "@/lib/hash";
+import { enforceRateLimit, requireInternalApiKey } from "@/lib/api-security";
 
 const runAgentSchema = z.object({
   metadata: agentMetadataSchema,
@@ -14,6 +15,8 @@ const runAgentSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    requireInternalApiKey(request);
+    enforceRateLimit(request, "compute-run-agent", 3);
     const body = await readSchema(request, runAgentSchema, 80_000);
     const result = await runAgentTask({ metadata: body.metadata, prompt: body.prompt, model: body.model ?? clientConfig.computeModel });
     return NextResponse.json({ ...result, computeHash: hashJson(result) });

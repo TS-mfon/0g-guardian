@@ -547,6 +547,39 @@ pre {
   align-self: start;
 }
 
+.task-quote,
+.task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.task-quote {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.task-quote strong {
+  margin-left: auto;
+  color: var(--green);
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .compute-explainer {
   display: grid;
   gap: 14px;

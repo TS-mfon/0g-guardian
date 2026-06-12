@@ -56,7 +56,8 @@ function buildCapabilityResponse(metadata: AgentMetadata, prompt: string) {
 async function call0GCompute(input: { apiKey?: string; baseUrl?: string; model: string; prompt: string; fallback: string }) {
   const baseUrl = input.baseUrl ?? process.env.OG_COMPUTE_BASE_URL ?? process.env.NEXT_PUBLIC_0G_COMPUTE_BASE_URL ?? "https://router-api.0g.ai/v1";
   const apiKey = input.apiKey ?? process.env.OG_COMPUTE_KEY ?? "";
-  const demoMode = process.env.OG_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  const demoMode = process.env.NODE_ENV !== "production"
+    && (process.env.OG_DEMO_MODE === "true" || process.env.NEXT_PUBLIC_DEMO_MODE === "true");
   if (!apiKey) {
     if (demoMode) return { text: input.fallback };
     throw new Error("0G Compute is not configured. Set OG_COMPUTE_KEY for production task execution.");
@@ -71,6 +72,7 @@ async function call0GCompute(input: { apiKey?: string; baseUrl?: string; model: 
     body: JSON.stringify({
       model: input.model,
       verify_tee: true,
+      max_tokens: 2000,
       messages: [
         { role: "system", content: "You are a concise AI agent running through 0G Compute. Return useful output only." },
         { role: "user", content: input.prompt }

@@ -27,6 +27,7 @@ export const agentFunCoreAbi = [
   "function nextTaskId() view returns (uint256)",
   "function modelHash(string modelId) pure returns (bytes32)",
   "function approvedModels(bytes32 modelHash) view returns (bool)",
+  "function taskExecutors(address executor) view returns (bool)",
   "function setModelApproval(bytes32 modelHash,bool approved)",
   "function setExecutor(address executor,bool allowed)",
   "function setPauseState(bool pauseLaunches,bool pauseTasks,bool pauseMarket)",

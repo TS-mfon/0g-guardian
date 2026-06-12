@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm run build && npm run test:contracts",
     "test:contracts": "forge test --root contracts",
+    "test:reliability": "tsx --test tests/reliability.test.ts",
     "deploy:contract": "forge create contracts/src/AgentFunCore.sol:AgentFunCore --rpc-url https://evmrpc.0g.ai --private-key $DEPLOYER_PRIVATE_KEY --broadcast",
     "deploy:mainnet": "forge build --root contracts && tsx scripts/deploy-mainnet.ts",
     "deploy:v2:mainnet": "forge build --root contracts && tsx scripts/deploy-v2.ts",
@@ -17,7 +18,8 @@
     "seed:mainnet": "tsx scripts/seed-mainnet-agents.ts",
     "da:submit": "tsx scripts/da-submit.ts",
     "agent:demo": "tsx agents/memory-agent.ts",
-    "agents:smoke": "tsx scripts/five-agent-smoke.ts"
+    "agents:smoke": "tsx scripts/five-agent-smoke.ts",
+    "ops:check": "tsx scripts/check-operations.ts"
   },
   "dependencies": {
     "@0gfoundation/0g-compute-ts-sdk": "^0.8.1",

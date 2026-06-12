@@ -109,7 +109,7 @@ export function CreatorComputeKeyPanel({
         <article>
           <span>Compute activation</span>
           <strong>{activationFee ? `${activationFee} 0G` : "Loading live fee..."}</strong>
-          <p>Seeds the platform compute treasury and enables user-funded paid tasks.</p>
+          <p>Moves activation funds into the V2 contract treasury. Router Payment Layer funding is a separate operator action.</p>
           <button type="button" className="primary-button" onClick={activateCompute} disabled={active || activationBusy || !activationFee}>
             {activationBusy ? "Activating..." : active ? "Compute active" : "Activate compute"}
           </button>

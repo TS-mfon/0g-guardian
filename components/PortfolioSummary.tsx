@@ -130,11 +130,11 @@ export function PortfolioSummary({ initialAgents, initialTasks }: { initialAgent
                 <div>
                   <span>{agent.category} · Agent #{agent.id}</span>
                   <h3>{agent.name} <em>${agent.symbol}</em></h3>
-                  <p>Readiness {agent.readinessScore}%. Market cap {agent.marketCap} 0G. {agent.taskCount} paid tasks.</p>
+                  <p>Readiness {agent.readinessScore}%. Market cap {agent.marketCap} 0G. {agent.taskCount} tasks created.</p>
                   <p className="private-revenue-copy">Private revenue: {claimableByAgent[agent.id] ?? "0.0"} 0G</p>
                   <div className="managed-actions">
-                    <Link className="proof-link" href={`/agents/${agent.id}`}>Manage</Link>
-                    <Link className="primary-button" href={`/agents/${agent.id}#creator-console`}>Activate compute</Link>
+                    <Link className="proof-link" href={`/creator/agents/${agent.id}`}>Manage</Link>
+                    <Link className="primary-button" href={`/creator/agents/${agent.id}`}>Activate compute</Link>
                     <button className="secondary-button" disabled={!!busy} onClick={() => setActive(agent.id, !agent.active)}>
                       {busy === `active-${agent.id}` ? "Updating..." : agent.active ? "Pause" : "Activate"}
                     </button>

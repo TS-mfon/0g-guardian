@@ -3,6 +3,7 @@ import { z } from "zod";
 import { apiError, readSchema } from "@/lib/api";
 import { generateAgentProfile } from "@/lib/compute-client";
 import { clientConfig } from "@/lib/config";
+import { enforceRateLimit, requireInternalApiKey } from "@/lib/api-security";
 
 const profileRequestSchema = z.object({
   idea: z.string().min(1).max(2000),
@@ -12,6 +13,8 @@ const profileRequestSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    requireInternalApiKey(request);
+    enforceRateLimit(request, "generate-profile", 3);
     const body = await readSchema(request, profileRequestSchema, 32_000);
     const result = await generateAgentProfile({
       idea: body.idea,

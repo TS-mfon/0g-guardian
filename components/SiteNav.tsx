@@ -9,6 +9,8 @@ export function SiteNav() {
         <Link href="/launch">Launch</Link>
         <Link href="/agents">Agents</Link>
         <Link href="/arena">Arena</Link>
+        <Link href="/tasks">Tasks</Link>
+        <Link href="/creator">Creator</Link>
         <Link href="/portfolio">Portfolio</Link>
         <Link href="/economy">Economy</Link>
         <Link href="/proofs">Proofs</Link>

@@ -1,5 +1,5 @@
 import { SiteNav } from "@/components/SiteNav";
-import { PortfolioSummary } from "@/components/PortfolioSummary";
+import { UserPortfolioSummary } from "@/components/UserPortfolioSummary";
 import { WalletConnect } from "@/components/WalletConnect";
 import { loadAgentsFromChain, loadTasksFromChain } from "@/lib/agentfun";
 import { getServerNetwork } from "@/lib/server-network";
@@ -14,14 +14,13 @@ export default async function PortfolioPage() {
       <SiteNav />
       <section className="page-hero">
         <span className="section-kicker">Portfolio</span>
-        <h1>Your agents, keys, tasks, and creator earnings.</h1>
+        <h1>Your keys, submitted tasks, results, and refunds.</h1>
         <p>
-          Connect a wallet to use the on-chain contract actions: launch agents, buy keys,
-          create paid tasks, activate compute, and claim creator earnings.
+          Creator management is isolated under the Creator route. This portfolio is focused on user positions and paid-task recovery.
         </p>
       </section>
       <WalletConnect />
-      <PortfolioSummary initialAgents={agents} initialTasks={tasks} />
+      <UserPortfolioSummary agents={agents} tasks={tasks} />
     </main>
   );
 }

@@ -8,6 +8,7 @@ import { AgentView } from "@/lib/agentfun";
 import { getUserMessage } from "@/lib/errors";
 import { uploadJsonTo0GFromBrowser } from "@/lib/storage-client";
 import { agentFunCoreContract, getSelectedNetworkKey, getSignerForAction } from "@/lib/wallet";
+import { failedReadinessMessage, getCreatedTaskId } from "@/lib/task-client";
 
 function bytes32(value: string) {
   return ethers.zeroPadValue(value as `0x${string}`, 32);
@@ -31,7 +32,7 @@ export function AgentComparePanel({ agents }: { agents: AgentView[] }) {
     const network = getSelectedNetworkKey();
     const readinessResponse = await fetch(`/api/readiness?network=${network}`);
     const readiness = await readinessResponse.json().catch(() => null);
-    if (!readinessResponse.ok || !readiness?.taskReady) throw new Error(`${agent.name} cannot run because the selected network execution service is not ready.`);
+    if (!readinessResponse.ok || !readiness?.taskReady) throw new Error(`${agent.name}: ${failedReadinessMessage(readiness)}`);
     const quoteResponse = await fetch("/api/task-quote", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -49,24 +50,25 @@ export function AgentComparePanel({ agents }: { agents: AgentView[] }) {
     setStatus(`Uploading ${agent.name}'s comparison prompt to 0G Storage...`);
     const upload = await uploadJsonTo0GFromBrowser(payload, signer, network);
     const contract = await agentFunCoreContract();
-    const [fee, taskId] = await Promise.all([contract.minTaskFee(), contract.nextTaskId()]);
+    const fee = await contract.minTaskFee();
     const computeBudget = BigInt(quote.computeBudget);
     setStatus(`Sign paid task transaction for ${agent.name}.`);
     const tx = await contract.createTask(BigInt(agent.id), bytes32(upload.rootHash), computeBudget, BigInt(Math.floor(Date.now() / 1000) + 86_400), { value: fee + computeBudget });
-    await tx.wait();
+    const taskId = getCreatedTaskId(await tx.wait());
 
     setStatus(`Executing ${agent.name} through the verified task pipeline...`);
     const executeResponse = await fetch("/api/tasks/execute", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ taskId: taskId.toString(), prompt: payload, network })
+      body: JSON.stringify({ taskId, network })
     });
     const execution = await executeResponse.json().catch(() => null);
     if (!executeResponse.ok) {
       throw new Error(execution?.error?.message ?? `${agent.name} task is paid but execution is pending.`);
     }
+    if (!execution?.completionTx) throw new Error(`${agent.name} task is paid and execution is ${execution?.status ?? "pending"}. Recover it from the task center.`);
     return {
-      taskId: String(execution.taskId),
+      taskId: String(execution.taskId ?? taskId),
       answer: String(execution.answer ?? ""),
       model: String(execution.model ?? agent.modelId),
       provider: String(execution.provider ?? "0G Compute"),
@@ -131,7 +133,7 @@ export function AgentComparePanel({ agents }: { agents: AgentView[] }) {
       </div>
       <label>Comparison task<textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} /></label>
       <button className="primary-button" disabled={!canCompare}>{busy ? "Running comparison..." : "Pay + run comparison"}</button>
-      {status ? <p className="status-line">{status}</p> : null}
+      {status ? <p className="status-line" aria-live="polite">{status}</p> : null}
       <div className="compare-results-grid">
         {resultA ? <TaskResultReceipt receipt={resultA} /> : null}
         {resultB ? <TaskResultReceipt receipt={resultB} /> : null}

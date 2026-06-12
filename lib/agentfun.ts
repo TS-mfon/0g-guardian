@@ -38,6 +38,11 @@ export interface TaskView {
   status: number;
   createdAt: string;
   deadline: string;
+  promptRoot: string;
+  resultRoot: string;
+  computeHash: string;
+  completedAt: string;
+  rating: number;
 }
 
 export function readProvider(networkKey: ZeroGNetworkKey = "mainnet") {
@@ -125,7 +130,12 @@ export async function loadTasksFromChain(networkKey: ZeroGNetworkKey = "mainnet"
         actualComputeCost: ethers.formatEther(task.actualComputeCost),
         status: Number(task.status),
         createdAt: task.createdAt.toString(),
-        deadline: task.deadline.toString()
+        deadline: task.deadline.toString(),
+        promptRoot: String(task.promptRoot),
+        resultRoot: String(task.resultRoot),
+        computeHash: String(task.computeHash),
+        completedAt: task.completedAt.toString(),
+        rating: Number(task.rating)
       } satisfies TaskView;
     }));
     return tasks.reverse();

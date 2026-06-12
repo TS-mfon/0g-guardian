@@ -36,9 +36,9 @@ function LiveAgentTile({ agent }: { agent: AgentView }) {
       </div>
       <span>{agent.category} · Agent #{agent.id}</span>
       <h3>{agent.name}</h3>
-      <p>Agent ID {agent.agentIdTokenId}. {agent.taskCount} paid tasks. {agent.keySupply} keys issued.</p>
+      <p>Agent ID {agent.agentIdTokenId}. {agent.taskCount} tasks created. {agent.keySupply} keys issued.</p>
       <div className="agent-tile-metrics">
-        <strong>{agent.taskCount} tasks completed</strong>
+        <strong>{agent.taskCount} tasks created</strong>
         <em>{agent.marketCap} 0G market cap</em>
       </div>
       <span className="chain-link-copy">View verified agent</span>

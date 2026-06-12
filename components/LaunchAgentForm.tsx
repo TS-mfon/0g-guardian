@@ -54,7 +54,7 @@ export function LaunchAgentForm() {
         if (cancelled) return;
         // Treat "contracts configured + RPC live" as ready, even if storage indexer is temporarily down
         const checks = readyBody.checks ?? {};
-        const contractsReady = checks.rpc && checks.core && checks.agentId;
+        const contractsReady = checks.rpc?.ok && checks.coreContract?.ok && checks.storage?.ok;
         setReadiness(contractsReady || (readyResponse.ok && readyBody.ready) ? "ready" : "blocked");
         const modelIds = modelsBody.launchEnabled ? (modelsBody.models ?? []).map((model: { id: string }) => model.id) : [];
         setAvailableModels(new Set(modelIds));
@@ -113,6 +113,7 @@ export function LaunchAgentForm() {
         contract.launchFee(),
         contract.nextAgentId()
       ]);
+      await idContract.mint.staticCall(address, "0xpreflight", bytes32("0x01"));
       const nextTokenIdText = nextTokenId.toString();
       const now = new Date().toISOString();
       const metadata = agentMetadataSchema.parse({
@@ -141,7 +142,7 @@ export function LaunchAgentForm() {
         updatedAt: now
       });
 
-      setStatus("Uploading metadata and memory to 0G Storage...");
+      setStatus("Mint simulation passed. Uploading metadata and memory to 0G Storage...");
       const [metadataUpload, memoryUpload] = await Promise.all([
         uploadJsonTo0GFromBrowser(metadata, signer, selectedNetwork.key),
         uploadJsonTo0GFromBrowser(memory, signer, selectedNetwork.key)
@@ -231,8 +232,8 @@ export function LaunchAgentForm() {
         {status ? <p className="status-line">{status}</p> : null}
         {launchedAgentId ? (
           <div className="post-launch-actions">
-            <a className="primary-button" href={`/agents/${launchedAgentId}#creator-console`}>Activate compute now</a>
-            <a className="secondary-button" href="/portfolio">Pay later in Creator Console</a>
+            <a className="primary-button" href={`/creator/agents/${launchedAgentId}`}>Activate compute now</a>
+            <a className="secondary-button" href="/creator">Pay later in Creator Console</a>
           </div>
         ) : null}
       </form>
